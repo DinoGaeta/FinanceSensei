@@ -717,11 +717,14 @@ def main():
                                 link = article.get('link', '#')
                                 news_source = article.get('publisher', 'Source')
                             
-                            with st.expander(f"🔹 {title[:60]}..."):
-                                st.write(f"_{news_source}_")
-                                st.write(summary[:300] + "..." if len(summary) > 300 else summary)
+                            with st.expander(f"🔹 {title[:80]}..."):
+                                st.write(f"**{news_source}**")
+                                st.write(summary if summary else "No summary available.")
+                                # Always show a link - if no direct link, search for it
                                 if link and link != '#':
-                                    st.link_button(t["read_more"], link)
+                                    st.link_button(f"📖 {t['read_more']}", link)
+                                else:
+                                    st.link_button(f"🔍 Search Article", f"https://www.google.com/search?q={title[:50]}")
                     else:
                         st.info("No recent institutional news found for this asset.")
 
