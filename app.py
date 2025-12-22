@@ -130,6 +130,7 @@ from engine.analytics import AnalyticsEngine
 # ... (CSS remains same in actual file, but I'll update the main logic)
 
 from engine.sensei import SenseiAI
+from engine.report_generator import ReportGenerator
 
 def main():
     provider = DataProvider()
@@ -147,55 +148,124 @@ def main():
         t = TRANSLATIONS[lang]
 
         # Navigation
-        app_mode = st.radio("Navigation", ["Dashboard", "Vision"], index=0, 
-                            format_func=lambda x: t["nav_dashboard"] if x == "Dashboard" else t["nav_vision"])
+        app_mode = st.radio("Navigation", ["Dashboard", "Vision", "Reports"], index=0, 
+                            format_func=lambda x: t["nav_dashboard"] if x == "Dashboard" else (t["nav_vision"] if x == "Vision" else t["report_hub"]))
         
         st.divider()
 
         def render_landing_page(t):
             st.title(f"🦉 {t['vision_title']}")
+            st.markdown("---")
             
-            col1, col2 = st.columns([2, 1])
+            # Mission and Strategy in a more balanced layout
+            col1, col2 = st.columns([1, 1], gap="large")
             
             with col1:
+                st.markdown(f"### {t['vision_mission']}")
                 st.markdown(f"""
                 <div class='premium-card' style='border-left: 5px solid var(--accent-blue);'>
-                    <h3>{t['vision_mission']}</h3>
-                    <p style='font-size: 1.1rem; line-height: 1.6;'>{t['mission_text']}</p>
+                    <p style='font-size: 1.15rem; line-height: 1.7; color: #FFFFFF;'>{t['mission_text']}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
+                st.markdown(f"### {t['market_strategy']}")
                 st.markdown(f"""
                 <div class='premium-card' style='border-left: 5px solid var(--accent-green);'>
-                    <h3>{t['market_strategy']}</h3>
-                    <p style='font-size: 1.1rem; line-height: 1.6;'>{t['strategy_text']}</p>
+                    <p style='font-size: 1.1rem; line-height: 1.7; color: var(--text-main);'>{t['strategy_text']}</p>
                 </div>
                 """, unsafe_allow_html=True)
 
             with col2:
+                # Tech Stack and AI Philosophy
+                st.markdown("### Technical Architecture")
                 st.markdown("""
                 <div class='glass-panel'>
-                    <h4>Stack Technology</h4>
-                    <ul style='color: var(--text-dim);'>
-                        <li>Streamlit Engine</li>
-                        <li>Ollama Local LLM</li>
-                        <li>CCXT (Crypto)</li>
-                        <li>yFinance (TradFi)</li>
-                        <li>Plotly Visuals</li>
-                    </ul>
+                    <h5 style='color: var(--accent-blue); margin-bottom: 0.5rem;'>Core Stack</h5>
+                    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;'>
+                        <div>• Streamlit Engine</div>
+                        <div>• Ollama Local LLM</div>
+                        <div>• CCXT (Crypto)</div>
+                        <div>• yFinance (TradFi)</div>
+                        <div>• Plotly Visuals</div>
+                        <div>• Financial Logic (Py)</div>
+                    </div>
                 </div>
-                <br/>
-                <div class='glass-panel'>
-                    <h4>Private-First AI</h4>
-                    <p style='font-size: 0.9rem; color: var(--text-dim);'>
-                        Your data, your strategy. FinanceSensei performs all high-level reasoning locally via Ollama, 
-                        ensuring that institutional alpha remains in your hands.
+                """, unsafe_allow_html=True)
+                
+                st.markdown("<br/>", unsafe_allow_html=True)
+                
+                st.markdown("### Private-First AI Philosophy")
+                st.markdown(f"""
+                <div class='glass-panel' style='border-top: 2px solid var(--accent-blue);'>
+                    <p style='font-size: 0.95rem; color: var(--text-dim); font-style: italic;'>
+                        "Your data, your strategy. FinanceSensei performs all high-level reasoning locally via Ollama, 
+                        ensuring that institutional alpha remains in your hands."
                     </p>
                 </div>
                 """, unsafe_allow_html=True)
 
+            # Copy-Ready Section
+            st.markdown("---")
+            st.subheader("📋 Institutional Alpha Pitch (Ready for Copy)")
+            st.caption("Copy this professional summary for your pitch decks or social profiles.")
+            
+            content_to_copy = f"""# {t['vision_title']}
+
+## {t['vision_mission']}
+{t['mission_text']}
+
+## {t['market_strategy']}
+{t['strategy_text']}
+
+---
+**Tech Stack:** Streamlit | Ollama | CCXT | yFinance | Plotly
+**Philosophy:** Private-First, Sovereign Financial Intelligence.
+"""
+            st.code(content_to_copy, language="markdown")
+
         if app_mode == "Vision":
             render_landing_page(t)
+            st.stop()
+
+        def render_report_hub(t, provider, sensei, analytics):
+            st.title(f"📊 {t['report_hub']}")
+            st.markdown(f"> {t['report_outlook']}")
+            
+            # Multi-asset selection
+            assets = st.multiselect("Select Assets for the Weekly Brief", 
+                                    ["BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "ADA/USDT", "SOL/USDT"],
+                                    default=["BTC/USDT", "ETH/USDT"])
+            
+            if st.button(t["generate_report"]):
+                with st.spinner("Sensei is synthesizing institutional data..."):
+                    generator = ReportGenerator(sensei)
+                    basket_data = []
+                    
+                    for ticker in assets:
+                        data = provider.fetch_crypto_data(ticker, timeframe='1d', limit=30)
+                        if not data.empty:
+                            close_col = 'close' if 'close' in data.columns else 'Close'
+                            rsi = analytics.calculate_rsi(data)
+                            vol = data[close_col].pct_change().std()
+                            news = provider.fetch_news(ticker)
+                            sentiment = sensei.analyze_sentiment(news)
+                            
+                            basket_data.append({
+                                "ticker": ticker,
+                                "price": data[close_col].iloc[-1],
+                                "rsi": rsi,
+                                "vol": vol,
+                                "sentiment": sentiment['label']
+                            })
+                    
+                    report = generator.generate_weekly_report(basket_data, lang=st.session_state.get('lang', 'it'))
+                    st.markdown("---")
+                    st.markdown(report)
+                    
+                    st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md")
+
+        if app_mode == "Reports":
+            render_report_hub(t, provider, sensei, analytics)
             st.stop()
 
         # AI Engine Selector
