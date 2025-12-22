@@ -243,42 +243,76 @@ def main():
             st.title(f"📊 {t['report_hub']}")
             st.markdown(f"> {t['report_outlook']}")
             
-            # Multi-asset selection
-            assets = st.multiselect("Select Assets for the Weekly Brief", 
-                                    all_tickers,
-                                    default=["BTC/USDT", "ETH/USDT"] if "BTC/USDT" in all_tickers else [])
+            col_left, col_right = st.columns([1, 2], gap="large")
             
-            if st.button(t["generate_report"]):
+            selected_basket_data = []
+            
+            with col_left:
+                st.markdown(f"#### 🎯 {t['active_selection']}")
+                assets = st.multiselect("Add Assets to Brief", 
+                                        all_tickers,
+                                        default=["BTC/USDT", "ETH/USDT"] if "BTC/USDT" in all_tickers else [])
+                
+                st.divider()
+                generate_clicked = st.button(t["generate_report"], use_container_width=True, type="primary")
+            
+            with col_right:
+                st.markdown(f"#### ⚡ {t['basket_intel']}")
+                if not assets:
+                    st.info("Institutional data will appear here once assets are selected.")
+                else:
+                    # Render small glass panels for each asset
+                    cols_icons = st.columns(3)
+                    for i, ticker in enumerate(assets):
+                        with st.spinner(f"Syncing {ticker}..."):
+                            data = provider.fetch_crypto_data(ticker, timeframe='1d', limit=5)
+                            if not data.empty:
+                                close_col = 'close' if 'close' in data.columns else 'Close'
+                                price = data[close_col].iloc[-1]
+                                prev_price = data[close_col].iloc[-2]
+                                change = ((price - prev_price) / prev_price) * 100
+                                rsi = analytics.calculate_rsi(data)
+                                
+                                color = "var(--accent-green)" if change >= 0 else "var(--accent-red)"
+                                glow = "glow-green" if change >= 0 else "glow-red"
+                                
+                                # Store for generator
+                                news = provider.fetch_news(ticker)
+                                sentiment = sensei.analyze_sentiment(news)
+                                selected_basket_data.append({
+                                    "ticker": ticker,
+                                    "price": price,
+                                    "rsi": rsi,
+                                    "vol": data[close_col].pct_change().std(),
+                                    "sentiment": sentiment['label']
+                                })
+                                
+                                with cols_icons[i % 3]:
+                                    st.markdown(f"""
+                                    <div class="glass-panel" style='padding: 0.8rem; margin-bottom: 0.5rem; border-top: 2px solid {color};'>
+                                        <div style='font-size: 0.8rem; color: var(--text-dim); text-align: center;'>{ticker}</div>
+                                        <div style='font-size: 1.1rem; font-weight: 700; text-align: center;'>${price:,.2f}</div>
+                                        <div class="{glow}" style='font-size: 0.75rem; text-align: center;'>{"+" if change >=0 else ""}{change:.1f}%</div>
+                                    </div>
+                                    """, unsafe_allow_html=True)
+
+            if generate_clicked:
+                st.divider()
                 with st.spinner("Sensei is synthesizing institutional data..."):
                     generator = ReportGenerator(sensei)
-                    basket_data = []
+                    report = generator.generate_weekly_report(selected_basket_data, lang=st.session_state.get('lang', 'it'))
                     
-                    for ticker in assets:
-                        data = provider.fetch_crypto_data(ticker, timeframe='1d', limit=30)
-                        if not data.empty:
-                            close_col = 'close' if 'close' in data.columns else 'Close'
-                            rsi = analytics.calculate_rsi(data)
-                            vol = data[close_col].pct_change().std()
-                            news = provider.fetch_news(ticker)
-                            sentiment = sensei.analyze_sentiment(news)
-                            
-                            basket_data.append({
-                                "ticker": ticker,
-                                "price": data[close_col].iloc[-1],
-                                "rsi": rsi,
-                                "vol": vol,
-                                "sentiment": sentiment['label']
-                            })
-                    
-                    report = generator.generate_weekly_report(basket_data, lang=st.session_state.get('lang', 'it'))
-                    st.markdown("---")
+                    st.markdown("### 🦉 Strategic Synthesis")
                     st.markdown(report)
                     
-                    st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md")
-                    
-                    # Word Export
-                    docx_buffer = generator.generate_docx_report(report)
-                    st.download_button(t["export_word"], docx_buffer, file_name=f"FinanceSensei_Report_{datetime.date.today()}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md", use_container_width=True)
+                    with c2:
+                        docx_buffer = generator.generate_docx_report(report)
+                        st.download_button(t["export_word"], docx_buffer, file_name=f"FinanceSensei_Report_{datetime.date.today()}.docx", 
+                                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                           use_container_width=True)
 
         if app_mode == "Reports":
             render_report_hub(t, provider, sensei, analytics, all_tickers)
