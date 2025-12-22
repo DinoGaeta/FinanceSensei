@@ -710,15 +710,15 @@ def main():
                                 click_url = content.get('clickThroughUrl')
                                 link = click_url.get('url', '#') if click_url and isinstance(click_url, dict) else article.get('link', '#')
                                 prov = content.get('provider')
-                                provider = prov.get('displayName', 'Source') if prov and isinstance(prov, dict) else 'Source'
+                                news_source = prov.get('displayName', 'Source') if prov and isinstance(prov, dict) else 'Source'
                             else:
                                 title = article.get('title', 'News Article')
                                 summary = article.get('summary', 'No summary available.')
                                 link = article.get('link', '#')
-                                provider = article.get('publisher', 'Source')
+                                news_source = article.get('publisher', 'Source')
                             
                             with st.expander(f"🔹 {title[:60]}..."):
-                                st.write(f"_{provider}_")
+                                st.write(f"_{news_source}_")
                                 st.write(summary[:300] + "..." if len(summary) > 300 else summary)
                                 if link and link != '#':
                                     st.link_button(t["read_more"], link)
