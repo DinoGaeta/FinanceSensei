@@ -239,14 +239,14 @@ def main():
             render_landing_page(t)
             st.stop()
 
-        def render_report_hub(t, provider, sensei, analytics):
+        def render_report_hub(t, provider, sensei, analytics, all_tickers):
             st.title(f"📊 {t['report_hub']}")
             st.markdown(f"> {t['report_outlook']}")
             
             # Multi-asset selection
             assets = st.multiselect("Select Assets for the Weekly Brief", 
-                                    ["BTC/USDT", "ETH/USDT", "BNB/USDT", "XRP/USDT", "ADA/USDT", "SOL/USDT"],
-                                    default=["BTC/USDT", "ETH/USDT"])
+                                    all_tickers,
+                                    default=["BTC/USDT", "ETH/USDT"] if "BTC/USDT" in all_tickers else [])
             
             if st.button(t["generate_report"]):
                 with st.spinner("Sensei is synthesizing institutional data..."):
@@ -277,7 +277,7 @@ def main():
                     st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md")
 
         if app_mode == "Reports":
-            render_report_hub(t, provider, sensei, analytics)
+            render_report_hub(t, provider, sensei, analytics, all_tickers)
             st.stop()
 
         sensei_sidebar_header(lang=lang)
