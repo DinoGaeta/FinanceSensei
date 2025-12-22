@@ -707,8 +707,10 @@ def main():
                             if isinstance(content, dict):
                                 title = content.get('title', article.get('title', 'News Article'))
                                 summary = content.get('summary', content.get('description', 'No summary available.'))
-                                link = content.get('clickThroughUrl', {}).get('url', article.get('link', '#'))
-                                provider = content.get('provider', {}).get('displayName', 'Source')
+                                click_url = content.get('clickThroughUrl')
+                                link = click_url.get('url', '#') if click_url and isinstance(click_url, dict) else article.get('link', '#')
+                                prov = content.get('provider')
+                                provider = prov.get('displayName', 'Source') if prov and isinstance(prov, dict) else 'Source'
                             else:
                                 title = article.get('title', 'News Article')
                                 summary = article.get('summary', 'No summary available.')
