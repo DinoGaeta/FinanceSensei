@@ -261,11 +261,29 @@ def main():
         dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.get('dark_mode', False))
         st.session_state['dark_mode'] = dark_mode
         
-        # Inject theme class
+        # CSS-only Dark Mode (Streamlit blocks JavaScript)
         if dark_mode:
-            st.markdown("<script>document.body.classList.add('dark-theme');</script>", unsafe_allow_html=True)
-        else:
-            st.markdown("<script>document.body.classList.remove('dark-theme');</script>", unsafe_allow_html=True)
+            st.markdown("""
+            <style>
+                .stApp {
+                    background-color: #121212 !important;
+                    color: #E8EAED !important;
+                }
+                .premium-card, .glass-panel {
+                    background-color: #1E1E1E !important;
+                    border-color: #3C4043 !important;
+                }
+                section[data-testid="stSidebar"] {
+                    background: #1E1E1E !important;
+                }
+                h1, h2, h3, h4, h5, h6, p, span, div {
+                    color: #E8EAED !important;
+                }
+                .stTabs [data-baseweb="tab-list"] {
+                    background-color: #1E1E1E !important;
+                }
+            </style>
+            """, unsafe_allow_html=True)
 
         # AI Engine Selector
         ai_engine_display = {"heuristic": t["ai_standard"], "ollama": t["ai_deep"]}
