@@ -669,9 +669,7 @@ def main():
                     else:
                         st.info("No recent institutional news found for this asset.")
 
-                    # Update AI Reasoning with News Context in every loop
-                    news_context = "\n".join([f"- {a['title']}" for a in news[:5]])
-                    st.session_state['current_insight'] = sensei.generate_strategic_insight(data, search_ticker, news_context=news_context)
+                    # News context is already factored into sentiment analysis above
 
                 with tabs[4]:
                     st.subheader(t["chat_tab"])
