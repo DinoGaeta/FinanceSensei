@@ -163,7 +163,32 @@ def main():
         app_mode = st.radio("Navigation", ["Dashboard", "Vision", "Reports"], index=0, 
                             format_func=lambda x: t["nav_dashboard"] if x == "Dashboard" else (t["nav_vision"] if x == "Vision" else t["report_hub"]))
         
+        # Snapshot Presets
+        snapshots = {
+            "Default": {"primary": "BTC/USDT", "secondary": ""},
+            "BTC vs ETH": {"primary": "BTC/USDT", "secondary": "ETH/USDT"},
+            "Layer 1 Battle": {"primary": "ETH/USDT", "secondary": "SOL/USDT"},
+            "DeFi Bluechips": {"primary": "AAVE/USDT", "secondary": "UNI/USDT"},
+            "AI Sector": {"primary": "FET/USDT", "secondary": "NEAR/USDT"},
+            "Stable Pulse": {"primary": "BTC/USDT", "secondary": "USDT/USD"}
+        }
+
         st.divider()
+        st.subheader(f"📊 {t['market_snapshot']}")
+        
+        # Initialize state if not present
+        if 'primary_asset' not in st.session_state:
+            st.session_state.primary_asset = "BTC/USDT"
+        if 'secondary_asset' not in st.session_state:
+            st.session_state.secondary_asset = ""
+
+        def apply_snapshot():
+            snap = st.session_state.current_snapshot
+            if snap in snapshots:
+                st.session_state.primary_asset = snapshots[snap]["primary"]
+                st.session_state.secondary_asset = snapshots[snap]["secondary"]
+
+        st.selectbox("Select Regime", list(snapshots.keys()), key="current_snapshot", on_change=apply_snapshot)
 
         def render_landing_page(t):
             st.title(f"🦉 {t['vision_title']}")
@@ -321,8 +346,23 @@ def main():
         sensei_sidebar_header(lang=lang)
         
         st.subheader(t["discovery_hub"])
-        search_ticker = st.selectbox(t["asset_primary"], all_tickers, index=all_tickers.index("BTC/USDT") if "BTC/USDT" in all_tickers else 0)
-        compare_ticker = st.selectbox(t["asset_optional"], [""] + all_tickers, index=0)
+        
+        # Primary Ticker
+        try:
+            p_idx = all_tickers.index(st.session_state.primary_asset)
+        except:
+            p_idx = 0
+        search_ticker = st.selectbox(t["asset_primary"], all_tickers, index=p_idx, key="primary_selector")
+        st.session_state.primary_asset = search_ticker
+
+        # Secondary Ticker
+        comp_options = [""] + all_tickers
+        try:
+            s_idx = comp_options.index(st.session_state.secondary_asset)
+        except:
+            s_idx = 0
+        compare_ticker = st.selectbox(t["asset_optional"], comp_options, index=s_idx, key="secondary_selector")
+        st.session_state.secondary_asset = compare_ticker
         
         st.divider()
         st.subheader(t["scenario_params"])
