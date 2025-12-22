@@ -605,9 +605,14 @@ def main():
                     fig_mc.add_trace(go.Scatter(y=p05, mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(126, 231, 135, 0.05)', showlegend=False))
                     fig_mc.add_trace(go.Scatter(y=median_path, mode='lines', line=dict(width=3, color='#7EE787'), name='Median Projection'))
                     
-                    fig_mc.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                                        xaxis=dict(title="Days Ahead", gridcolor="#21262d"), 
-                                        yaxis=dict(title="Price Projection", gridcolor="#21262d"), height=450, margin=dict(t=0, b=0, l=0, r=0))
+                    fig_mc.update_layout(template="plotly_dark", 
+                                        paper_bgcolor="#1E1E1E", 
+                                        plot_bgcolor="#1E1E1E",
+                                        xaxis=dict(title="Days Ahead", gridcolor="#333333", zerolinecolor="#333333"), 
+                                        yaxis=dict(title="Price Projection", gridcolor="#333333", zerolinecolor="#333333"), 
+                                        font=dict(color="#E8EAED"),
+                                        height=450, 
+                                        margin=dict(t=30, b=30, l=30, r=0))
                     st.plotly_chart(fig_mc, use_container_width=True)
 
                 with tabs[2]:
