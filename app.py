@@ -19,18 +19,19 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
 
     :root {
-        /* Material Dark Theme Colors */
-        --md-background: #121212;
-        --md-surface: #1E1E1E;
-        --md-surface-variant: #2C2C2C;
+        /* Material Light Theme Colors */
+        --md-background: #FFFFFF;
+        --md-surface: #F8F9FA;
+        --md-surface-variant: #F1F3F4;
         --md-primary: #1A73E8;
         --md-primary-variant: #1557B0;
         --md-success: #34A853;
         --md-error: #EA4335;
         --md-warning: #FBBC04;
-        --md-text-primary: #E8EAED;
-        --md-text-secondary: #9AA0A6;
-        --md-divider: #3C4043;
+        --md-text-primary: #202124;
+        --md-text-secondary: #5F6368;
+        --md-divider: #DADCE0;
+        --md-border: #E8EAED;
         
         /* Spacing (Material 8px grid) */
         --spacing-xs: 8px;
@@ -39,10 +40,10 @@ st.markdown("""
         --spacing-lg: 32px;
         --spacing-xl: 48px;
         
-        /* Shadows */
-        --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
-        --shadow-2: 0 1px 3px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.2);
-        --shadow-3: 0 4px 8px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.25);
+        /* Shadows - Light Theme */
+        --shadow-1: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px rgba(60,64,67,0.15);
+        --shadow-2: 0 1px 3px rgba(60,64,67,0.3), 0 2px 6px rgba(60,64,67,0.15);
+        --shadow-3: 0 4px 8px rgba(60,64,67,0.2), 0 6px 20px rgba(60,64,67,0.15);
         
         /* Transitions */
         --transition-standard: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);

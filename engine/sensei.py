@@ -105,7 +105,16 @@ class SenseiAI:
         normalized = max(0, min(1, normalized))
         
         label = "Greed" if normalized > 0.6 else "Fear" if normalized < 0.4 else "Neutral"
-        return {"score": normalized, "label": label}
+        
+        # Add explanation based on sentiment
+        if normalized > 0.6:
+            explanation = "Positive news flow detected. Market participants show optimistic sentiment."
+        elif normalized < 0.4:
+            explanation = "Negative headlines dominate. Cautious sentiment prevails."
+        else:
+            explanation = "Mixed signals. Market sentiment remains balanced."
+        
+        return {"score": normalized, "label": label, "explanation": explanation}
 
     def _ollama_generate(self, asset_name: str, metrics: dict, lang: str = "en") -> str:
         """Generate insight using a local Ollama instance."""
