@@ -275,6 +275,10 @@ def main():
                     st.markdown(report)
                     
                     st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md")
+                    
+                    # Word Export
+                    docx_buffer = generator.generate_docx_report(report)
+                    st.download_button(t["export_word"], docx_buffer, file_name=f"FinanceSensei_Report_{datetime.date.today()}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 
         if app_mode == "Reports":
             render_report_hub(t, provider, sensei, analytics, all_tickers)

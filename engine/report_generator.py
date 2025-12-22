@@ -1,5 +1,8 @@
 import requests
 import datetime
+import io
+from docx import Document
+from docx.shared import Pt
 
 class ReportGenerator:
     def __init__(self, ai_engine):
@@ -8,12 +11,10 @@ class ReportGenerator:
     def generate_weekly_report(self, assets_data: list, lang: str = "it") -> str:
         """
         Generates a professional financial report based on a list of asset data.
-        assets_data: list of dicts reflecting {ticker, price, rsi, volatility, sentiment}
         """
         date_str = datetime.date.today().strftime("%d %B %Y")
         language_ctx = "Italian" if lang == "it" else "English"
         
-        # Build the data context for the AI
         data_summary = ""
         for asset in assets_data:
             data_summary += f"- {asset['ticker']}: Price ${asset['price']:,.2f}, RSI {asset['rsi']:.1f}, Vol {asset['vol']:.1%}, Sentiment {asset['sentiment']}\n"
@@ -32,8 +33,6 @@ class ReportGenerator:
         
         user_prompt = f"Data Summary for this week ({date_str}):\n{data_summary}\n\nGenerate the complete report in Markdown."
         
-        # Reuse SenseiAI's chat or direct ollama call
-        # Since ReportGenerator needs a longer synthesis, we use a longer timeout
         try:
             if self.ai.provider == "ollama":
                 response = requests.post(self.ai.ollama_url, 
@@ -49,6 +48,40 @@ class ReportGenerator:
             report_content = f"Error during report generation: {str(e)}"
             
         return f"# FinanceSensei Weekly Alpha Report\n**Date: {date_str}**\n\n---\n\n{report_content}"
+
+    def generate_docx_report(self, markdown_text: str) -> io.BytesIO:
+        """
+        Converts basic markdown report to a professional Word document.
+        """
+        doc = Document()
+        
+        # Split by sections (simple parsing)
+        lines = markdown_text.split('\n')
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            if line.startswith('# '):
+                h = doc.add_heading(line[2:], level=0)
+            elif line.startswith('## '):
+                h = doc.add_heading(line[3:], level=1)
+            elif line.startswith('### '):
+                h = doc.add_heading(line[4:], level=2)
+            elif line.startswith('**') and line.endswith('**'):
+                p = doc.add_paragraph()
+                run = p.add_run(line.strip('*'))
+                run.bold = True
+            elif line.startswith('- '):
+                doc.add_paragraph(line[2:], style='List Bullet')
+            else:
+                doc.add_paragraph(line)
+        
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        buffer.seek(0)
+        return buffer
 
     def _heuristic_report(self, assets_data, lang):
         if lang == "it":
