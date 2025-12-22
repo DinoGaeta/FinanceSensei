@@ -138,7 +138,9 @@ def main():
     analytics = AnalyticsEngine()
     
     # Universal Asset List
-    all_tickers = provider.get_all_crypto_tickers()
+    crypto_tickers = provider.get_all_crypto_tickers()
+    macro_tickers = list(provider.macro_tickers.keys())
+    all_tickers = macro_tickers + crypto_tickers
 
     # Sidebar - Sensei Intelligence
     with st.sidebar:
@@ -168,8 +170,9 @@ def main():
             "Default": {"primary": "BTC/USDT", "secondary": ""},
             "BTC vs ETH": {"primary": "BTC/USDT", "secondary": "ETH/USDT"},
             "Layer 1 Battle": {"primary": "ETH/USDT", "secondary": "SOL/USDT"},
-            "DeFi Bluechips": {"primary": "AAVE/USDT", "secondary": "UNI/USDT"},
             "AI Sector": {"primary": "FET/USDT", "secondary": "NEAR/USDT"},
+            "Global Hedge (Gold)": {"primary": "GOLD", "secondary": "BTC/USDT"},
+            "Market Equity (S&P)": {"primary": "S&P500", "secondary": "BTC/USDT"},
             "Stable Pulse": {"primary": "BTC/USDT", "secondary": "USDT/USD"}
         }
 
@@ -185,8 +188,13 @@ def main():
         def apply_snapshot():
             snap = st.session_state.current_snapshot
             if snap in snapshots:
-                st.session_state.primary_asset = snapshots[snap]["primary"]
-                st.session_state.secondary_asset = snapshots[snap]["secondary"]
+                primary = snapshots[snap]["primary"]
+                secondary = snapshots[snap]["secondary"]
+                st.session_state.primary_asset = primary
+                st.session_state.secondary_asset = secondary
+                # Update the widget internal states directly
+                st.session_state.primary_selector = primary
+                st.session_state.secondary_selector = secondary
 
         st.selectbox("Select Regime", list(snapshots.keys()), key="current_snapshot", on_change=apply_snapshot)
 
