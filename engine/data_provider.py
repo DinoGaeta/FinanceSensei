@@ -86,12 +86,31 @@ class DataProvider:
     def fetch_news(self, ticker: str) -> List[dict]:
         """Fetch news for a given ticker via Yahoo Finance."""
         try:
-            yf_ticker = self.macro_tickers.get(ticker, ticker)
-            if "/" in ticker: # Try conversion for crypto
-                yf_ticker = ticker.replace("/", "-")
+            # Convert ticker to YFinance format
+            if "/" in ticker:
+                # BTC/USDT -> BTC-USD (Yahoo format)
+                base = ticker.split("/")[0]
+                yf_ticker = f"{base}-USD"
+            else:
+                yf_ticker = self.macro_tickers.get(ticker, ticker)
             
             t = yf.Ticker(yf_ticker)
-            return t.news[:10]
+            
+            # Try different news access methods (YFinance API varies)
+            news = []
+            try:
+                news = t.news if hasattr(t, 'news') and t.news else []
+            except:
+                pass
+            
+            # Fallback: try get_news method if available
+            if not news:
+                try:
+                    news = t.get_news() if hasattr(t, 'get_news') else []
+                except:
+                    pass
+            
+            return news[:10] if news else []
         except Exception as e:
             print(f"Error fetching news for {ticker}: {e}")
             return []
