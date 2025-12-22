@@ -1,8 +1,6 @@
 import requests
 import datetime
 import io
-from docx import Document
-from docx.shared import Pt
 
 class ReportGenerator:
     def __init__(self, ai_engine):
@@ -53,6 +51,11 @@ class ReportGenerator:
         """
         Converts basic markdown report to a professional Word document.
         """
+        try:
+            from docx import Document
+        except ImportError:
+            raise ImportError("python-docx is not installed. Run 'pip install python-docx'.")
+
         doc = Document()
         
         # Split by sections (simple parsing)
