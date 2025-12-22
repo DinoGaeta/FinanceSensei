@@ -702,12 +702,14 @@ def main():
                     st.markdown(f"**📰 {t['news_intel_feed']}**")
                     if news:
                         for article in news[:5]:
-                            with st.expander(f"🔹 {article['title'][:60]}..."):
+                            title = article.get('title', 'News Article')
+                            link = article.get('link', '#')
+                            with st.expander(f"🔹 {title[:60]}..."):
                                 st.write(f"_{article.get('publisher', 'Source')}_")
-                                # Use .get() safely for articles
                                 summary = article.get('summary', 'No summary available.')
                                 st.write(summary)
-                                st.link_button(t["read_more"], article['link'])
+                                if link and link != '#':
+                                    st.link_button(t["read_more"], link)
                     else:
                         st.info("No recent institutional news found for this asset.")
 
