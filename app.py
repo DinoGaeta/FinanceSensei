@@ -740,24 +740,65 @@ def main():
                     
                     # Initialize chat history
                     if "messages" not in st.session_state:
-                        st.session_state.messages = [{"role": "assistant", "content": t["chat_welcome"]}]
+                        st.session_state.messages = [] # Initialize as empty, welcome message is now markdown
+                    
+                    # File Uploader
+                    with st.expander(f"📁 {t.get('upload_docs', 'Upload Documents/Images')}", expanded=False):
+                        uploaded_files = st.file_uploader(
+                            t.get('upload_label', "Drag and drop PNG, JPG, PDF, DOCX"),
+                            type=['png', 'jpg', 'jpeg', 'pdf', 'docx', 'txt'],
+                            accept_multiple_files=True,
+                            key="chat_uploads"
+                        )
+                        if uploaded_files:
+                            st.caption(t.get('files_processed', "{} attached files processed.").format(len(uploaded_files)))
 
-                    # Display chat messages
+                    # Chat history
                     for message in st.session_state.messages:
-                        with st.chat_message(message["role"]):
+                        avatar = "👤" if message["role"] == "user" else "🦉"
+                        with st.chat_message(message["role"], avatar=avatar):
                             st.markdown(message["content"])
 
-                    # Chat input
-                    if prompt := st.chat_input(t["chat_placeholder"]):
-                        st.session_state.messages.append({"role": "user", "content": prompt})
-                        with st.chat_message("user"):
-                            st.markdown(prompt)
+                    # Suggestion Chips (Google Style)
+                    # We place them in a container to keep them near the bottom if possible, 
+                    # but typically they push up with content. 
+                    st.markdown("---")
+                    cols_chips = st.columns([1, 1, 1, 2]) # 3 chips + spacer
+                    chip_prompt = None
+                    
+                    if cols_chips[0].button(f"🌍 {t.get('chips_outlook', 'Macro Outlook')}", use_container_width=True):
+                        chip_prompt = "Analyze the current global macro outlook and its impact on crypto."
+                    
+                    if cols_chips[1].button(f"💼 {t.get('chips_portfolio', 'Portfolio Check')}", use_container_width=True):
+                        chip_prompt = "Review the current active asset selection and suggest risk adjustments."
+                        
+                    if cols_chips[2].button(f"🐋 {t.get('chips_whale', 'Whale Alerts')}", use_container_width=True):
+                        chip_prompt = "Check for any recent whale activity or volume anomalies."
 
-                        with st.chat_message("assistant"):
+                    # Chat input handling
+                    user_input = st.chat_input(t["chat_placeholder"])
+                    
+                    # Determine active prompt (Input takes precedence, then chips)
+                    active_prompt = user_input if user_input else chip_prompt
+
+                    if active_prompt:
+                        # Display user message
+                        st.session_state.messages.append({"role": "user", "content": active_prompt})
+                        with st.chat_message("user", avatar="👤"):
+                            st.markdown(active_prompt)
+                            if uploaded_files:
+                                st.caption(f"📎 {len(uploaded_files)} file(s) attached")
+
+                        with st.chat_message("assistant", avatar="🦉"):
                             with st.spinner("Sensei is thinking..."):
-                                response = sensei.chat(prompt, lang=lang)
+                                # Pass files to Sensei
+                                response = sensei.chat(active_prompt, files=uploaded_files, lang=lang)
                                 st.markdown(response)
                                 st.session_state.messages.append({"role": "assistant", "content": response})
+                        
+                        # Rerun to update chat history visually immediately if needed, 
+                        # though Streamlit usually handles this.
+                        st.rerun()
 
                 if compare_ticker and len(tabs) > 5:
                     with tabs[5]:

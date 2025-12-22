@@ -8,3 +8,5 @@ pandas-ta
 scipy
 python-dotenv
 python-docx
+PyPDF2
+Pillow

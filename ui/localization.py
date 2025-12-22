@@ -54,7 +54,13 @@ TRANSLATIONS = {
         "vision_mission": "Mission: Institutional Alpha for Everyone",
         "mission_text": "FinanceSensei was born to bridge the gap between retail investors and institutional desks. By combining high-frequency analytics with deterministic and generative AI, we provide situational awareness that was previously reserved for Bloomberg terminal users.",
         "market_strategy": "Market Strategy & Monetization",
-        "strategy_text": "Our model follows an 'Open-Core' path. The analytical terminal remains open-source, while high-frequency data feeds, multi-chain alerting, and custom AI strategy models form the 'Pro' tier. Target markets include solo traders, crypto-native funds, and decentralized autonomous organizations (DAOs)."
+        "strategy_text": "Our model follows an 'Open-Core' path. The analytical terminal remains open-source, while high-frequency data feeds, multi-chain alerting, and custom AI strategy models form the 'Pro' tier. Target markets include solo traders, crypto-native funds, and decentralized autonomous organizations (DAOs).",
+        "upload_docs": "Upload Documents/Images",
+        "upload_label": "Drag and drop PNG, JPG, PDF, DOCX",
+        "files_processed": "{} attached files processed.",
+        "chips_outlook": "🌍 Macro Outlook",
+        "chips_portfolio": "💼 Portfolio Check",
+        "chips_whale": "🐋 Whale Alerts"
     },
     "it": {
         "discovery_hub": "Hub di Scoperta",
@@ -111,7 +117,13 @@ TRANSLATIONS = {
         "vision_mission": "Missione: Alpha Istituzionale per Tutti",
         "mission_text": "FinanceSensei è nato per colmare il divario tra investitori retail e desk istituzionali. Combinando analisi ad alta frequenza con AI deterministica e generativa, offriamo una consapevolezza situazionale precedentemente riservata agli utenti di terminali Bloomberg.",
         "market_strategy": "Strategia di Mercato & Monetizzazione",
-        "strategy_text": "Il nostro modello segue un percorso 'Open-Core'. Il terminale analitico rimane open-source, mentre i feed dati ad alta frequenza, gli alert multi-chain e i modelli di strategia AI personalizzati costituiscono il livello 'Pro'. I mercati target includono trader solisti, fondi crypto-native e organizzazioni autonome decentralizzate (DAO)."
+        "strategy_text": "Il nostro modello segue un percorso 'Open-Core'. Il terminale analitico rimane open-source, mentre i feed dati ad alta frequenza, gli alert multi-chain e i modelli di strategia AI personalizzati costituiscono il livello 'Pro'. I mercati target includono trader solisti, fondi crypto-native e organizzazioni autonome decentralizzate (DAO).",
+        "upload_docs": "Carica Documenti/Immagini",
+        "upload_label": "Trascina PNG, JPG, PDF, DOCX",
+        "files_processed": "{} file allegati elaborati.",
+        "chips_outlook": "🌍 Outlook Macro",
+        "chips_portfolio": "💼 Check Portafoglio",
+        "chips_whale": "🐋 Alert Balene"
     }
 }
 

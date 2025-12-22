@@ -1,7 +1,12 @@
 import requests
 import json
 import os
-from typing import Optional, List
+import io
+import base64
+from typing import Optional, List, Union
+import PyPDF2
+from docx import Document
+from PIL import Image
 from ui.localization import SENSEI_STRINGS
 
 class SenseiAI:
@@ -17,30 +22,88 @@ class SenseiAI:
         else:
             return self._heuristic_generate(asset_name, metrics, lang)
 
-    def chat(self, user_prompt: str, lang: str = "it") -> str:
-        """Handle conversational queries with a financial bias."""
+    def chat(self, user_prompt: str, files: List = None, lang: str = "it") -> str:
+        """Handle conversational queries with multimodal support."""
         if self.provider != "ollama":
             return "Sensei Chat is only available in 'Deep Intelligence' mode (Ollama)."
             
         try:
             language_context = "English" if lang == "en" else "Italian"
+            file_context = ""
+            images = []
+
+            # Process attached files
+            if files:
+                for file_obj in files:
+                    # Check file type
+                    file_name = file_obj.name.lower()
+                    if file_name.endswith(('.png', '.jpg', '.jpeg')):
+                        # Encode image for LLaVA/Vision models
+                        img_b64 = self._encode_image(file_obj)
+                        if img_b64: images.append(img_b64)
+                    else:
+                        # Extract text from documents
+                        text = self._process_document(file_obj)
+                        if text:
+                            file_context += f"\n--- DOCUMENT: {file_obj.name} ---\n{text[:5000]}..." # Truncate large docs
+
             system_prompt = f"""
             System: You are 'FinanceSensei', a specialized financial AI strategist.
             Tone: Professional, institutional, high-conviction, strategic.
             Language: Always respond in {language_context}.
             Mandate: You are here to provide financial insights, market analysis, and strategic observations.
+            Context: {file_context if file_context else "No files attached."}
             Filtering: If the user asks a non-financial or non-market related question, politely pivot back to financial strategy. Do not provide definitive investment advice, but rather probabilistic observations.
             """
             
-            response = requests.post(self.ollama_url, 
-                                     json={"model": self.model, "prompt": f"{system_prompt}\nUser: {user_prompt}", "stream": False},
-                                     timeout=15)
+            payload = {
+                "model": self.model, 
+                "prompt": f"{system_prompt}\nUser: {user_prompt}", 
+                "stream": False
+            }
+            
+            # Attach images if supported by model (Ollama API structure)
+            if images:
+                payload["images"] = images
+
+            response = requests.post(self.ollama_url, json=payload, timeout=30)
                                      
             if response.status_code == 200:
                 return response.json().get('response', "Sensei is processing the signal...")
             return "Sensei chat signal interrupted. (Ollama connection failed)"
         except Exception as e:
             return f"Sensei chat signal interrupted. ({str(e)})"
+
+    def _process_document(self, file_obj) -> str:
+        """Extract text from PDF, DOCX, or TXT."""
+        try:
+            text = ""
+            name = file_obj.name.lower()
+            if name.endswith('.pdf'):
+                reader = PyPDF2.PdfReader(file_obj)
+                for page in reader.pages:
+                    text += page.extract_text() + "\n"
+            elif name.endswith('.docx'):
+                doc = Document(file_obj)
+                for para in doc.paragraphs:
+                    text += para.text + "\n"
+            elif name.endswith('.txt'):
+                text = file_obj.getvalue().decode("utf-8")
+            return text
+        except Exception as e:
+            print(f"Error processing document {file_obj.name}: {e}")
+            return f"[Error reading {file_obj.name}]"
+
+    def _encode_image(self, file_obj) -> Optional[str]:
+        """Convert image file to Base64 string for Ollama."""
+        try:
+            image = Image.open(file_obj)
+            buffered = io.BytesIO()
+            image.save(buffered, format=image.format)
+            return base64.b64encode(buffered.getvalue()).decode('utf-8')
+        except Exception as e:
+            print(f"Error encoding image {file_obj.name}: {e}")
+            return None
 
     def _heuristic_generate(self, asset_name: str, metrics: dict, lang: str = "en") -> str:
         """Heuristic-based strategic insight."""
