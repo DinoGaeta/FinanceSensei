@@ -702,12 +702,22 @@ def main():
                     st.markdown(f"**📰 {t['news_intel_feed']}**")
                     if news:
                         for article in news[:5]:
-                            title = article.get('title', 'News Article')
-                            link = article.get('link', '#')
-                            with st.expander(f"🔹 {title[:60]}..."):
-                                st.write(f"_{article.get('publisher', 'Source')}_")
+                            # Handle YFinance nested structure
+                            content = article.get('content', article)
+                            if isinstance(content, dict):
+                                title = content.get('title', article.get('title', 'News Article'))
+                                summary = content.get('summary', content.get('description', 'No summary available.'))
+                                link = content.get('clickThroughUrl', {}).get('url', article.get('link', '#'))
+                                provider = content.get('provider', {}).get('displayName', 'Source')
+                            else:
+                                title = article.get('title', 'News Article')
                                 summary = article.get('summary', 'No summary available.')
-                                st.write(summary)
+                                link = article.get('link', '#')
+                                provider = article.get('publisher', 'Source')
+                            
+                            with st.expander(f"🔹 {title[:60]}..."):
+                                st.write(f"_{provider}_")
+                                st.write(summary[:300] + "..." if len(summary) > 300 else summary)
                                 if link and link != '#':
                                     st.link_button(t["read_more"], link)
                     else:
