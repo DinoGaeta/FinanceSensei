@@ -56,13 +56,18 @@ def render_mascot(image_path: str = None):
 
 def asset_header(ticker: str, price: float, change: float):
     """Render a header for a specific asset analysis."""
-    color = "#7EE787" if change >= 0 else "#FF7B72"
+    # Ensure change is a scalar
+    try:
+        val = float(change)
+    except:
+        val = 0.0
+    color = "#7EE787" if val >= 0 else "#FF7B72"
     st.markdown(f"""
     <div style='display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2rem;'>
         <h1 style='margin:0;'>{ticker}</h1>
         <div style='text-align: right;'>
-            <div style='font-size: 2rem; font-weight: 800;'>${price:,.2f}</div>
-            <div style='color: {color}; font-weight: 600;'>{"+" if change >= 0 else ""}{change:.2f}% (24h)</div>
+            <div style='font-size: 2rem; font-weight: 800;'>${float(price):,.2f}</div>
+            <div style='color: {color}; font-weight: 600;'>{"+" if val >= 0 else ""}{val:.2f}% (24h)</div>
         </div>
     </div>
     """, unsafe_allow_html=True)

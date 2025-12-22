@@ -16,109 +16,201 @@ st.set_page_config(
 # Custom Styling (Midnight Professional)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Manrope:wght@300;400;600;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
 
     :root {
-        --bg-deep: #0B0E14;
-        --card-bg: #161B22;
-        --card-border: #30363D;
-        --accent-blue: #58A6FF;
-        --accent-green: #7EE787;
-        --text-main: #C9D1D9;
-        --text-dim: #8B949E;
+        /* Material Dark Theme Colors */
+        --md-background: #121212;
+        --md-surface: #1E1E1E;
+        --md-surface-variant: #2C2C2C;
+        --md-primary: #1A73E8;
+        --md-primary-variant: #1557B0;
+        --md-success: #34A853;
+        --md-error: #EA4335;
+        --md-warning: #FBBC04;
+        --md-text-primary: #E8EAED;
+        --md-text-secondary: #9AA0A6;
+        --md-divider: #3C4043;
+        
+        /* Spacing (Material 8px grid) */
+        --spacing-xs: 8px;
+        --spacing-sm: 16px;
+        --spacing-md: 24px;
+        --spacing-lg: 32px;
+        --spacing-xl: 48px;
+        
+        /* Shadows */
+        --shadow-1: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.15);
+        --shadow-2: 0 1px 3px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.2);
+        --shadow-3: 0 4px 8px rgba(0,0,0,0.3), 0 6px 20px rgba(0,0,0,0.25);
+        
+        /* Transitions */
+        --transition-standard: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
+
 
     /* Base Layout */
     .stApp {
-        background-color: var(--bg-deep);
-        color: var(--text-main);
-        font-family: 'Inter', sans-serif;
+        background-color: var(--md-background);
+        color: var(--md-text-primary);
+        font-family: 'Roboto', sans-serif;
+        font-weight: 400;
     }
 
-    /* Global Typography */
-    h1, h2, h3 {
-        font-family: 'Manrope', sans-serif !important;
-        letter-spacing: 1.5px !important;
-        font-weight: 600 !important;
-        color: #FFFFFF !important;
+    /* Typography */
+    h1, h2, h3, h4, h5, h6 {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 500 !important;
+        color: var(--md-text-primary) !important;
+        letter-spacing: -0.01em !important;
     }
+    
+    h1 { font-size: 2.5rem !important; margin-bottom: var(--spacing-md) !important; }
+    h2 { font-size: 2rem !important; margin-bottom: var(--spacing-sm) !important; }
+    h3 { font-size: 1.5rem !important; margin-bottom: var(--spacing-sm) !important; }
 
-    /* Premium Cards */
+
+    /* Premium Cards - Material Edition */
     .premium-card {
-        background-color: var(--card-bg);
-        border: 1px solid var(--card-border);
+        background-color: var(--md-surface);
+        border: none;
         border-radius: 12px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        transition: all 0.3s ease;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+        box-shadow: var(--shadow-2);
+        transition: var(--transition-standard);
     }
 
     .premium-card:hover {
-        border-color: var(--accent-blue);
+        box-shadow: var(--shadow-3);
         transform: translateY(-2px);
     }
 
-    /* Glassmorphism Sidebar */
-    section[data-testid="stSidebar"] {
-        background: rgba(22, 27, 34, 0.7) !important;
-        backdrop-filter: blur(15px) !important;
-        -webkit-backdrop-filter: blur(15px) !important;
-        border-right: 1px solid var(--card-border);
-    }
-
-    /* Scenario Calculator Glass */
+    /* Glass Panel - Material Surface */
     .glass-panel {
-        background: rgba(48, 54, 61, 0.3);
-        backdrop-filter: blur(12px);
-        border-radius: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        padding: 1.5rem;
+        background: var(--md-surface-variant);
+        border-radius: 12px;
+        border: 1px solid var(--md-divider);
+        padding: var(--spacing-sm);
+        box-shadow: var(--shadow-1);
     }
 
-    /* Metrics and Glows */
-    .metric-value {
-        font-size: 1.8rem;
-        font-weight: 800;
-        color: white;
+    /* Sidebar - Material Style */
+    section[data-testid="stSidebar"] {
+        background: var(--md-surface) !important;
+        border-right: 1px solid var(--md-divider);
     }
     
-    .glow-green { text-shadow: 0 0 10px rgba(126, 231, 135, 0.3); color: var(--accent-green); }
-    .glow-blue { text-shadow: 0 0 10px rgba(88, 166, 255, 0.3); color: var(--accent-blue); }
+    section[data-testid="stSidebar"] > div {
+        padding-top: var(--spacing-md) !important;
+    }
 
-    /* Anti-noise overrides */
-    div.stMetric > div { background: transparent !important; }
+    /* Metrics */
+    .metric-value {
+        font-family: 'Inter', sans-serif;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--md-text-primary);
+        letter-spacing: -0.02em;
+    }
+    
+    /* Material Color Utilities */
+    .glow-green { color: var(--md-success); font-weight: 500; }
+    .glow-blue { color: var(--md-primary); font-weight: 500; }
+    .glow-red { color: var(--md-error); font-weight: 500; }
+    .accent-red { border: 2px solid var(--md-error); }
+
+    /* Buttons - Material Style */
     div.stButton > button {
         background-color: transparent !important;
-        border: 1px solid var(--accent-blue) !important;
-        color: var(--accent-blue) !important;
+        border: 1.5px solid var(--md-primary) !important;
+        color: var(--md-primary) !important;
         border-radius: 8px !important;
-        font-weight: 600;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 500 !important;
+        padding: 10px 24px !important;
+        transition: var(--transition-standard) !important;
     }
+    
     div.stButton > button:hover {
-        background-color: rgba(88, 166, 255, 0.1) !important;
+        background-color: rgba(26, 115, 232, 0.08) !important;
+        border-color: var(--md-primary-variant) !important;
     }
 
-    /* Mobile Adaptivity */
+    /* Tabs - Material Style */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background-color: var(--md-surface);
+        border-bottom: 1px solid var(--md-divider);
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        color: var(--md-text-secondary);
+        font-family: 'Inter', sans-serif;
+        font-weight: 500;
+        padding: 12px 24px;
+        transition: var(--transition-standard);
+    }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        color: var(--md-text-primary);
+        background-color: rgba(255,255,255,0.05);
+    }
+    
+    .stTabs [data-baseweb="tab"][aria-selected="true"] {
+        color: var(--md-primary);
+        border-bottom: 2px solid var(--md-primary);
+    }
+
+    /* Input Fields - Material */
+    .stTextInput > div > div > input,
+    .stSelectbox > div > div > div,
+    .stMultiSelect > div > div > div {
+        background-color: var(--md-surface) !important;
+        border: 1px solid var(--md-divider) !important;
+        border-radius: 8px !important;
+        color: var(--md-text-primary) !important;
+        font-family: 'Roboto', sans-serif !important;
+        transition: var(--transition-standard) !important;
+    }
+
+    /* Expander */
+    .streamlit-expander {
+        background-color: var(--md-surface);
+        border: 1px solid var(--md-divider);
+        border-radius: 8px;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    /* Mobile Responsive */
     @media (max-width: 768px) {
+        h1 { font-size: 1.75rem !important; }
+        h2 { font-size: 1.5rem !important; }
+        h3 { font-size: 1.25rem !important; }
+        
         .premium-card {
-            padding: 1.5rem !important;
-            margin-bottom: 1rem !important;
+            padding: var(--spacing-sm) !important;
+            margin-bottom: var(--spacing-sm) !important;
         }
+        
         .metric-value {
-            font-size: 1.4rem !important;
+            font-size: 1.5rem !important;
         }
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 5px !important;
-        }
+        
         .stTabs [data-baseweb="tab"] {
-            padding-left: 10px !important;
-            padding-right: 10px !important;
-            font-size: 0.8rem !important;
+            padding: 8px 12px !important;
+            font-size: 0.875rem !important;
         }
+        
         .glass-panel {
-            padding: 1rem !important;
+            padding: var(--spacing-xs) !important;
         }
+    }
+
+    /* Smooth Rendering */
+    * {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -418,10 +510,11 @@ def main():
         data = provider.get_asset_data(search_ticker)
         if not data.empty:
             col = 'close' if 'close' in data.columns else 'Close'
-            current_price = data[col].iloc[-1]
+            current_price = float(data[col].iloc[-1])
             returns = data[col].pct_change().dropna()
+            last_change = float(returns.iloc[-1] * 100)
             
-            asset_header(search_ticker, current_price, returns.iloc[-1]*100)
+            asset_header(search_ticker, current_price, last_change)
             
             # Analytics Row
             a1, a2, a3 = st.columns(3)
@@ -547,14 +640,36 @@ def main():
                         color = "#7EE787" if val > 60 else "#FF7B72" if val < 40 else "#58A6FF"
                         st.markdown(f"""
                         <div style='text-align: center; padding: 1rem; border: 2px solid {color}; border-radius: 50%; width: 100px; height: 100px; margin: auto;'>
-                            <div style='font-size: 1.5rem; font-weight: 800; margin-top: 15px;'>{val:.0f}</div>
-                            <div style='font-size: 0.6rem;'>{sentiment['label']}</div>
+                            <div style='font-size: 1.5rem; font-weight: 800; margin-top: 15px; color: {color};'>{val:.0f}</div>
+                            <div style='font-size: 0.6rem; color: var(--text-dim);'>{sentiment['label']}</div>
                         </div>
                         """, unsafe_allow_html=True)
                     
                     with cols_s[1]:
-                        for item in news[:3]:
-                            st.markdown(f"- [{item.get('title')}]({item.get('link')})")
+                        st.markdown(f"""
+                        <div class='glass-panel' style='border-top: 2px solid {color}; padding: 0.8rem;'>
+                            <p style='font-size: 0.85rem; line-height: 1.4; color: var(--text-main); margin: 0;'>
+                                <strong>Sensei View:</strong> {sentiment['explanation']}
+                            </p>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+                    st.divider()
+                    st.markdown(f"**📰 {t['news_intel_feed']}**")
+                    if news:
+                        for article in news[:5]:
+                            with st.expander(f"🔹 {article['title'][:60]}..."):
+                                st.write(f"_{article.get('publisher', 'Source')}_")
+                                # Use .get() safely for articles
+                                summary = article.get('summary', 'No summary available.')
+                                st.write(summary)
+                                st.link_button(t["read_more"], article['link'])
+                    else:
+                        st.info("No recent institutional news found for this asset.")
+
+                    # Update AI Reasoning with News Context in every loop
+                    news_context = "\n".join([f"- {a['title']}" for a in news[:5]])
+                    st.session_state['current_insight'] = sensei.generate_strategic_insight(data, search_ticker, news_context=news_context)
 
                 with tabs[4]:
                     st.subheader(t["chat_tab"])
