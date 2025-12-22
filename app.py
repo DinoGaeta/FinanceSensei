@@ -647,10 +647,11 @@ def main():
                         """, unsafe_allow_html=True)
                     
                     with cols_s[1]:
+                        explanation = sentiment.get('explanation', 'Analyzing market sentiment patterns...')
                         st.markdown(f"""
                         <div class='glass-panel' style='border-top: 2px solid {color}; padding: 0.8rem;'>
-                            <p style='font-size: 0.85rem; line-height: 1.4; color: var(--text-main); margin: 0;'>
-                                <strong>Sensei View:</strong> {sentiment['explanation']}
+                            <p style='font-size: 0.85rem; line-height: 1.4; color: var(--md-text-primary); margin: 0;'>
+                                <strong>Sensei View:</strong> {explanation}
                             </p>
                         </div>
                         """, unsafe_allow_html=True)
