@@ -48,6 +48,20 @@ st.markdown("""
         /* Transitions */
         --transition-standard: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
     }
+    
+    /* Dark Theme Override */
+    .dark-theme {
+        --md-background: #121212;
+        --md-surface: #1E1E1E;
+        --md-surface-variant: #2C2C2C;
+        --md-text-primary: #E8EAED;
+        --md-text-secondary: #9AA0A6;
+        --md-divider: #3C4043;
+        --md-border: #5F6368;
+        --shadow-1: 0 1px 2px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+        --shadow-2: 0 1px 3px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
+        --shadow-3: 0 4px 8px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+    }
 
 
     /* Base Layout */
@@ -242,6 +256,16 @@ def main():
         lang = st.selectbox("Language / Lingua", ["it", "en"], format_func=lambda x: lang_display[x])
         st.session_state['lang'] = lang
         t = TRANSLATIONS[lang]
+        
+        # Theme Toggle
+        dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.get('dark_mode', False))
+        st.session_state['dark_mode'] = dark_mode
+        
+        # Inject theme class
+        if dark_mode:
+            st.markdown("<script>document.body.classList.add('dark-theme');</script>", unsafe_allow_html=True)
+        else:
+            st.markdown("<script>document.body.classList.remove('dark-theme');</script>", unsafe_allow_html=True)
 
         # AI Engine Selector
         ai_engine_display = {"heuristic": t["ai_standard"], "ollama": t["ai_deep"]}

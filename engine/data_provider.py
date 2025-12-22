@@ -2,6 +2,7 @@ import ccxt
 import yfinance as yf
 import pandas as pd
 import datetime
+import streamlit as st
 from typing import List, Optional, Union
 
 class DataProvider:
@@ -34,10 +35,11 @@ class DataProvider:
             print(f"Error fetching symbols: {e}")
             return ["BTC/USDT", "ETH/USDT", "SOL/USDT", "ICP/USDT"] # Fallback
 
-    def fetch_crypto_data(self, symbol: str, timeframe: str = '1d', limit: int = 100) -> pd.DataFrame:
-        """Fetch historical data from CCXT (Binance)."""
+    @st.cache_data(ttl=300, show_spinner=False)
+    def fetch_crypto_data(_self, symbol: str, timeframe: str = '1d', limit: int = 100) -> pd.DataFrame:
+        """Fetch historical data from CCXT (Binance). Cached for 5 minutes."""
         try:
-            ohlcv = self.binance.fetch_ohlcv(symbol, timeframe, limit=limit)
+            ohlcv = _self.binance.fetch_ohlcv(symbol, timeframe, limit=limit)
             df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
             df.set_index('timestamp', inplace=True)
