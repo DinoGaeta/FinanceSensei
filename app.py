@@ -147,6 +147,17 @@ def main():
         st.session_state['lang'] = lang
         t = TRANSLATIONS[lang]
 
+        # AI Engine Selector
+        ai_engine_display = {"heuristic": t["ai_standard"], "ollama": t["ai_deep"]}
+        # Default to ollama as requested
+        ai_provider = st.selectbox(t["ai_engine"], ["ollama", "heuristic"], format_func=lambda x: ai_engine_display[x])
+        
+        selected_model = "gpt-oss:120b-cloud"
+        if ai_provider == "ollama":
+            selected_model = st.text_input(t["ai_model"], value="gpt-oss:120b-cloud")
+            
+        sensei = SenseiAI(provider=ai_provider, model=selected_model)
+
         # Navigation
         app_mode = st.radio("Navigation", ["Dashboard", "Vision", "Reports"], index=0, 
                             format_func=lambda x: t["nav_dashboard"] if x == "Dashboard" else (t["nav_vision"] if x == "Vision" else t["report_hub"]))
@@ -267,17 +278,6 @@ def main():
         if app_mode == "Reports":
             render_report_hub(t, provider, sensei, analytics)
             st.stop()
-
-        # AI Engine Selector
-        ai_engine_display = {"heuristic": t["ai_standard"], "ollama": t["ai_deep"]}
-        # Default to ollama as requested
-        ai_provider = st.selectbox(t["ai_engine"], ["ollama", "heuristic"], format_func=lambda x: ai_engine_display[x])
-        
-        selected_model = "gpt-oss:120b-cloud"
-        if ai_provider == "ollama":
-            selected_model = st.text_input(t["ai_model"], value="gpt-oss:120b-cloud")
-            
-        sensei = SenseiAI(provider=ai_provider, model=selected_model)
 
         sensei_sidebar_header(lang=lang)
         
