@@ -119,7 +119,7 @@ BEGIN.
             
             payload = {
                 "model": self.model_name,
-                "messages": history,
+                "messages": messages,
                 "stream": False,
                 "options": {"temperature": 0.0} # Deterministic for tools
             }

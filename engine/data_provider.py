@@ -78,7 +78,8 @@ class DataProvider:
         """Fetch the most recent price for an asset."""
         df = self.get_asset_data(ticker)
         if not df.empty:
-            return float(df['close'].iloc[-1]) if 'close' in df.columns else float(df['Close'].iloc[-1])
+            val = df['close'].iloc[-1] if 'close' in df.columns else df['Close'].iloc[-1]
+            return float(val.item()) if hasattr(val, 'item') else float(val)
         return None
 
     def fetch_order_book(self, symbol: str, limit: int = 50) -> dict:

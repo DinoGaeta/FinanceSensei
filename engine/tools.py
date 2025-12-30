@@ -2,7 +2,10 @@
 import os
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
-from duckduckgo_search import DDGS
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    from duckduckgo_search import DDGS
 
 # --- Abstract Tool ---
 class Tool(ABC):
