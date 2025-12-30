@@ -15,10 +15,11 @@ class ReportGenerator:
         
         data_summary = ""
         for asset in assets_data:
-            data_summary += f"- {asset['ticker']}: Price ${asset['price']:,.2f}, RSI {asset['rsi']:.1f}, Vol {asset['vol']:.1%}, Sentiment {asset['sentiment']}\n"
+            neural_str = f", 7D Neural Target ${asset.get('neural_target', 0):.4f} (Conf: {asset.get('neural_conf', 0):.1%})" if asset.get('neural_target') else ""
+            data_summary += f"- {asset['ticker']}: Price ${asset['price']:,.2f}, RSI {asset.get('rsi', 0):.1f}, Vol {asset.get('vol', 0):.1%}, Sentiment {asset.get('sentiment', 'N/A')}{neural_str}\n"
             
         system_prompt = f"""
-        System: You are 'FinanceSensei', a top-tier institutional financial strategist.
+        System: You are 'Kitsune Finance', a top-tier institutional financial strategist by Kitsune Labs.
         Task: Generate a 'Weekly Alpha Recap' report.
         Tone: Deeply professional, objective, and institutional.
         Language: ALWAYS respond in {language_ctx}.
@@ -39,13 +40,13 @@ class ReportGenerator:
                 if response.status_code == 200:
                     report_content = response.json().get('response', "Failed to generate report content.")
                 else:
-                    report_content = "Connection to AI Engine lost during synthesis."
+                    report_content = "Connection to Kitsune Engine lost during synthesis."
             else:
                 report_content = self._heuristic_report(assets_data, lang)
         except Exception as e:
             report_content = f"Error during report generation: {str(e)}"
             
-        return f"# FinanceSensei Weekly Alpha Report\n**Date: {date_str}**\n\n---\n\n{report_content}"
+        return f"# Kitsune Finance Weekly Alpha Report\n**Date: {date_str}**\n\n---\n\n{report_content}"
 
     def generate_docx_report(self, markdown_text: str) -> io.BytesIO:
         """
@@ -88,7 +89,7 @@ class ReportGenerator:
 
     def _heuristic_report(self, assets_data, lang):
         if lang == "it":
-            return "Note: L'intelligenza profonda (Ollama) è necessaria per la sintesi dei report settimanali. Ecco un riassunto dei dati:\n" + \
+            return "Note: L'intelligenza profonda (Ollama) è necessaria per la sintesi dei report settimanali di Kitsune Finance. Ecco un riassunto dei dati:\n" + \
                    "\n".join([f"- {a['ticker']}: RSI {a['rsi']:.1f}" for a in assets_data])
-        return "Note: Deep Intelligence (Ollama) is required for strategic report synthesis. Data summary:\n" + \
+        return "Note: Deep Intelligence (Ollama) is required for strategic report synthesis in Kitsune Finance. Data summary:\n" + \
                "\n".join([f"- {a['ticker']}: RSI {a['rsi']:.1f}" for a in assets_data])

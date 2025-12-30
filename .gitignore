@@ -147,3 +147,13 @@ cython_debug/
 
 # Streamlit
 .streamlit/
+
+# --- Kitsune Finance Specific ---
+venv310/
+reports/
+memoria_gemini.txt
+memoria_gemini.bak
+start_agent.bat
+run_kitsune_finance.bat
+.streamlit/secrets.toml
+playwright-log.txt

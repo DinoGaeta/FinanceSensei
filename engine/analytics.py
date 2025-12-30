@@ -1,8 +1,44 @@
+from sklearn.linear_model import LinearRegression
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
 
+class NeuralCore:
+    def __init__(self):
+        self.model = LinearRegression()
+
+    def predict_price_trend(self, df: pd.DataFrame, days_ahead: int = 7) -> dict:
+        """Use Linear Regression to predict technical price direction."""
+        col = 'close' if 'close' in df.columns else 'Close'
+        if len(df) < 15:
+            return {"status": "Error", "message": "Inadequate history for ML neural sync"}
+        
+        y = df[col].values
+        X = np.arange(len(y)).reshape(-1, 1)
+        
+        # Linear Regression for trend discovery
+        self.model.fit(X, y)
+        confidence = self.model.score(X, y)
+        
+        # Future prediction
+        future_X = np.arange(len(y), len(y) + days_ahead).reshape(-1, 1)
+        forecast = self.model.predict(future_X)
+        
+        current_price = y[-1]
+        final_target = forecast[-1]
+        change_pct = ((final_target - current_price) / current_price) * 100
+        
+        return {
+            "status": "Success",
+            "target_price": final_target,
+            "change_pct": change_pct,
+            "confidence": confidence,
+            "forecast_path": forecast
+        }
+
 class AnalyticsEngine:
+    def __init__(self):
+        self.neural_core = NeuralCore()
     @staticmethod
     def calculate_sharpe_ratio(returns: pd.Series, risk_free_rate: float = 0.02) -> float:
         """Calculate the Sharpe Ratio for a given series of returns."""

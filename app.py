@@ -1,874 +1,667 @@
+
 import streamlit as st
+
+# MUST BE THE FIRST STREAMLIT COMMAND
+st.set_page_config(
+    page_title="Kitsune Finance | Kitsune Labs",
+    page_icon="logokitsunelabpng.png",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import datetime
+import os
+import threading
+import time
+import json
+import re
+import base64
+
 from engine.data_provider import DataProvider
+from ui.components import premium_card, kitsune_sidebar_header, asset_header, macro_insight_banner, render_mascot, render_header, render_agent_message, render_agent_sandbox
+from ui.localization import TRANSLATIONS
+from engine.analytics import AnalyticsEngine
+from engine.kitsune import KitsuneAI
+from engine.report_generator import ReportGenerator
+from engine.agent import AgentEngine
 
-# Page Configuration
-st.set_page_config(
-    page_title="FinanceSensei | Strategic Intelligence",
-    page_icon="icon.png",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Custom Styling (Midnight Professional)
+# Custom Styling
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Roboto:wght@300;400;500;700&display=swap');
-
-    :root {
-        /* Material Light Theme Colors */
-        --md-background: #FFFFFF;
-        --md-surface: #F8F9FA;
-        --md-surface-variant: #F1F3F4;
-        --md-primary: #1A73E8;
-        --md-primary-variant: #1557B0;
-        --md-success: #34A853;
-        --md-error: #EA4335;
-        --md-warning: #FBBC04;
-        --md-text-primary: #202124;
-        --md-text-secondary: #5F6368;
-        --md-divider: #DADCE0;
-        --md-border: #E8EAED;
-        
-        /* Spacing (Material 8px grid) */
-        --spacing-xs: 8px;
-        --spacing-sm: 16px;
-        --spacing-md: 24px;
-        --spacing-lg: 32px;
-        --spacing-xl: 48px;
-        
-        /* Shadows - Light Theme */
-        --shadow-1: 0 1px 2px rgba(60,64,67,0.3), 0 1px 3px rgba(60,64,67,0.15);
-        --shadow-2: 0 1px 3px rgba(60,64,67,0.3), 0 2px 6px rgba(60,64,67,0.15);
-        --shadow-3: 0 4px 8px rgba(60,64,67,0.2), 0 6px 20px rgba(60,64,67,0.15);
-        
-        /* Transitions */
-        --transition-standard: all 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
-    }
     
-    /* Dark Theme Override */
-    .dark-theme {
-        --md-background: #121212;
-        --md-surface: #1E1E1E;
-        --md-surface-variant: #2C2C2C;
-        --md-text-primary: #E8EAED;
-        --md-text-secondary: #9AA0A6;
-        --md-divider: #3C4043;
-        --md-border: #5F6368;
-        --shadow-1: 0 1px 2px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
-        --shadow-2: 0 1px 3px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.3);
-        --shadow-3: 0 4px 8px rgba(0,0,0,0.5), 0 6px 20px rgba(0,0,0,0.4);
+    :root {
+        --md-background: #0D1117;
+        --md-surface: #161B22;
+        --md-surface-variant: #21262D;
+        --md-primary: #58A6FF;
+        --md-success: #7EE787;
+        --md-error: #FF7B72;
+        --md-text-primary: #C9D1D9;
+        --md-text-secondary: #8B949E;
+        --md-border: #30363D;
     }
 
-
-    /* Base Layout */
     .stApp {
         background-color: var(--md-background);
         color: var(--md-text-primary);
         font-family: 'Roboto', sans-serif;
-        font-weight: 400;
     }
 
-    /* Typography */
-    h1, h2, h3, h4, h5, h6 {
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 500 !important;
-        color: var(--md-text-primary) !important;
-        letter-spacing: -0.01em !important;
-    }
-    
-    h1 { font-size: 2.5rem !important; margin-bottom: var(--spacing-md) !important; }
-    h2 { font-size: 2rem !important; margin-bottom: var(--spacing-sm) !important; }
-    h3 { font-size: 1.5rem !important; margin-bottom: var(--spacing-sm) !important; }
-
-
-    /* Premium Cards - Material Edition */
     .premium-card {
         background-color: var(--md-surface);
-        border: none;
+        border: 1px solid var(--md-border);
         border-radius: 12px;
-        padding: var(--spacing-md);
-        margin-bottom: var(--spacing-md);
-        box-shadow: var(--shadow-2);
-        transition: var(--transition-standard);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
-    .premium-card:hover {
-        box-shadow: var(--shadow-3);
-        transform: translateY(-2px);
-    }
-
-    /* Glass Panel - Material Surface */
     .glass-panel {
-        background: var(--md-surface-variant);
+        background: rgba(33, 38, 45, 0.7);
+        backdrop-filter: blur(8px);
+        border: 1px solid var(--md-border);
         border-radius: 12px;
-        border: 1px solid var(--md-divider);
-        padding: var(--spacing-sm);
-        box-shadow: var(--shadow-1);
+        padding: 1rem;
+        margin-bottom: 1rem;
     }
 
-    /* Sidebar - Material Style */
-    section[data-testid="stSidebar"] {
-        background: var(--md-surface) !important;
-        border-right: 1px solid var(--md-divider);
-    }
-    
-    section[data-testid="stSidebar"] > div {
-        padding-top: var(--spacing-md) !important;
-    }
-
-    /* Metrics */
     .metric-value {
         font-family: 'Inter', sans-serif;
-        font-size: 2rem;
+        font-size: 1.8rem;
         font-weight: 700;
-        color: var(--md-text-primary);
-        letter-spacing: -0.02em;
-    }
-    
-    /* Material Color Utilities */
-    .glow-green { color: var(--md-success); font-weight: 500; }
-    .glow-blue { color: var(--md-primary); font-weight: 500; }
-    .glow-red { color: var(--md-error); font-weight: 500; }
-    .accent-red { border: 2px solid var(--md-error); }
-
-    /* Buttons - Material Style */
-    div.stButton > button {
-        background-color: transparent !important;
-        border: 1.5px solid var(--md-primary) !important;
-        color: var(--md-primary) !important;
-        border-radius: 8px !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 500 !important;
-        padding: 10px 24px !important;
-        transition: var(--transition-standard) !important;
-    }
-    
-    div.stButton > button:hover {
-        background-color: rgba(26, 115, 232, 0.08) !important;
-        border-color: var(--md-primary-variant) !important;
-    }
-
-    /* Tabs - Material Style */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0;
-        background-color: var(--md-surface);
-        border-bottom: 1px solid var(--md-divider);
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        color: var(--md-text-secondary);
-        font-family: 'Inter', sans-serif;
-        font-weight: 500;
-        padding: 12px 24px;
-        transition: var(--transition-standard);
-    }
-    
-    .stTabs [data-baseweb="tab"]:hover {
-        color: var(--md-text-primary);
-        background-color: rgba(255,255,255,0.05);
-    }
-    
-    .stTabs [data-baseweb="tab"][aria-selected="true"] {
         color: var(--md-primary);
-        border-bottom: 2px solid var(--md-primary);
     }
 
-    /* Input Fields - Material */
-    .stTextInput > div > div > input,
-    .stSelectbox > div > div > div,
-    .stMultiSelect > div > div > div {
-        background-color: var(--md-surface) !important;
-        border: 1px solid var(--md-divider) !important;
-        border-radius: 8px !important;
-        color: var(--md-text-primary) !important;
-        font-family: 'Roboto', sans-serif !important;
-        transition: var(--transition-standard) !important;
+    /* Terminal Chat Styling */
+    .chat-container {
+        height: 600px;
+        overflow-y: auto;
+        padding: 1rem;
+        background: rgba(13, 17, 23, 0.4);
+        border: 1px solid var(--md-border);
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .user-bubble {
+        background: rgba(33, 38, 45, 0.8);
+        border: 1px solid #30363D;
+        padding: 1rem;
+        border-radius: 12px 12px 0 12px;
+        margin-bottom: 1rem;
+        margin-left: 20%;
+        color: #C9D1D9;
+    }
+    
+    .kitsune-bubble {
+        background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(0, 0, 0, 0));
+        border-left: 3px solid var(--md-primary);
+        padding: 1rem;
+        border-radius: 0 12px 12px 12px;
+        margin-bottom: 1rem;
+        margin-right: 20%;
+        color: #C9D1D9;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
     }
 
-    /* Expander */
-    .streamlit-expander {
-        background-color: var(--md-surface);
-        border: 1px solid var(--md-divider);
-        border-radius: 8px;
-        margin-bottom: var(--spacing-xs);
-    }
+    .glow-green { color: var(--md-success); }
+    .glow-blue { color: var(--md-primary); }
+    .glow-red { color: var(--md-error); }
+    
+    /* Smooth Scroll */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #30363D; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #58A6FF; }
 
-    /* Mobile Responsive */
-    @media (max-width: 768px) {
-        h1 { font-size: 1.75rem !important; }
-        h2 { font-size: 1.5rem !important; }
-        h3 { font-size: 1.25rem !important; }
-        
-        .premium-card {
-            padding: var(--spacing-sm) !important;
-            margin-bottom: var(--spacing-sm) !important;
-        }
-        
-        .metric-value {
-            font-size: 1.5rem !important;
-        }
-        
-        .stTabs [data-baseweb="tab"] {
-            padding: 8px 12px !important;
-            font-size: 0.875rem !important;
-        }
-        
-        .glass-panel {
-            padding: var(--spacing-xs) !important;
-        }
+    @keyframes pulse-athene {
+        0% { filter: drop-shadow(0 0 2px rgba(88, 166, 255, 0.4)); }
+        50% { filter: drop-shadow(0 0 10px rgba(88, 166, 255, 0.8)); }
+        100% { filter: drop-shadow(0 0 2px rgba(88, 166, 255, 0.4)); }
     }
-
-    /* Smooth Rendering */
-    * {
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
+    .athene-icon { animation: pulse-athene 2s infinite; }
 </style>
 """, unsafe_allow_html=True)
 
-# App Navigation & Layout
-from ui.components import premium_card, sensei_sidebar_header, asset_header, macro_insight_banner, render_mascot
-from ui.localization import TRANSLATIONS
-from engine.analytics import AnalyticsEngine
+def get_engines():
+    if 'provider' not in st.session_state:
+        st.session_state.provider = DataProvider()
+    if 'analytics' not in st.session_state:
+        st.session_state.analytics = AnalyticsEngine()
+    if 'sensei' not in st.session_state:
+        st.session_state.sensei = KitsuneAI()
+    return st.session_state.provider, st.session_state.analytics, st.session_state.sensei
 
-# ... (CSS remains same in actual file, but I'll update the main logic)
-
-from engine.sensei import SenseiAI
-from engine.report_generator import ReportGenerator
-
-def main():
-    provider = DataProvider()
-    analytics = AnalyticsEngine()
+def render_report_hub(t, provider, kitsune, analytics, all_tickers):
+    st.title(t['report_hub'])
+    st.markdown(f"> {t['report_outlook']}")
     
-    # Universal Asset List
-    crypto_tickers = provider.get_all_crypto_tickers()
-    macro_tickers = list(provider.macro_tickers.keys())
-    all_tickers = macro_tickers + crypto_tickers
-
-    # Sidebar - Sensei Intelligence
-    with st.sidebar:
-        # Language Selector
-        lang_display = {"it": "🇮🇹 Italiano", "en": "🇬🇧 English"}
-        lang = st.selectbox("Language / Lingua", ["it", "en"], format_func=lambda x: lang_display[x])
-        st.session_state['lang'] = lang
-        t = TRANSLATIONS[lang]
-        
-        # Theme Toggle
-        dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.get('dark_mode', False))
-        st.session_state['dark_mode'] = dark_mode
-        
-        # CSS-only Dark Mode (Streamlit blocks JavaScript)
-        if dark_mode:
-            st.markdown("""
-            <style>
-                .stApp {
-                    background-color: #121212 !important;
-                    color: #E8EAED !important;
-                }
-                .premium-card, .glass-panel {
-                    background-color: #1E1E1E !important;
-                    border-color: #3C4043 !important;
-                }
-                section[data-testid="stSidebar"] {
-                    background: #1E1E1E !important;
-                }
-                h1, h2, h3, h4, h5, h6, p, span, div {
-                    color: #E8EAED !important;
-                }
-                .stTabs [data-baseweb="tab-list"] {
-                    background-color: #1E1E1E !important;
-                }
-            </style>
-            """, unsafe_allow_html=True)
-
-        # AI Engine Selector
-        ai_engine_display = {"heuristic": t["ai_standard"], "ollama": t["ai_deep"]}
-        # Default to ollama as requested
-        ai_provider = st.selectbox(t["ai_engine"], ["ollama", "heuristic"], format_func=lambda x: ai_engine_display[x])
-        
-        selected_model = "gpt-oss:120b-cloud"
-        if ai_provider == "ollama":
-            selected_model = st.text_input(t["ai_model"], value="gpt-oss:120b-cloud")
-            
-        sensei = SenseiAI(provider=ai_provider, model=selected_model)
-
-        # Navigation
-        app_mode = st.radio("Navigation", ["Dashboard", "Vision", "Reports"], index=0, 
-                            format_func=lambda x: t["nav_dashboard"] if x == "Dashboard" else (t["nav_vision"] if x == "Vision" else t["report_hub"]))
-        
-        # Snapshot Presets
-        snapshots = {
-            "Default": {"primary": "BTC/USDT", "secondary": ""},
-            "BTC vs ETH": {"primary": "BTC/USDT", "secondary": "ETH/USDT"},
-            "Layer 1 Battle": {"primary": "ETH/USDT", "secondary": "SOL/USDT"},
-            "AI Sector": {"primary": "FET/USDT", "secondary": "NEAR/USDT"},
-            "Global Hedge (Gold)": {"primary": "GOLD", "secondary": "BTC/USDT"},
-            "Market Equity (S&P)": {"primary": "S&P500", "secondary": "BTC/USDT"},
-            "Stable Pulse": {"primary": "BTC/USDT", "secondary": "USDT/USD"}
-        }
-
+    col_left, col_right = st.columns([1, 2], gap="large")
+    selected_basket_data = []
+    
+    with col_left:
+        st.markdown(f"#### {t['active_selection']}")
+        assets = st.multiselect("Add Assets to Brief", 
+                                all_tickers,
+                                default=["BTC/USDT", "ETH/USDT"] if "BTC/USDT" in all_tickers else [])
         st.divider()
-        st.subheader(f"📊 {t['market_snapshot']}")
+        generate_clicked = st.button(t["generate_report"], use_container_width=True, type="primary")
+    
+    with col_right:
+        st.markdown(f"#### {t['basket_intel']}")
+        if not assets:
+            st.info("Institutional data will appear here once assets are selected.")
+        else:
+            # We show a limited grid for the report hub preview
+            cols_icons = st.columns(3)
+            for i, ticker in enumerate(assets):
+                data = provider.fetch_crypto_data(ticker, timeframe='1d', limit=2)
+                if not data.empty:
+                    close_col = 'close' if 'close' in data.columns else 'Close'
+                    price = data[close_col].iloc[-1]
+                    change = 0.0
+                    if len(data) > 1:
+                        prev_price = data[close_col].iloc[-2]
+                        change = ((price - prev_price) / prev_price) * 100
+                    
+                    news = provider.fetch_news(ticker)
+                    sentiment = sensei.analyze_sentiment(news)
+                    metrics = analytics.calculate_metrics(data)
+                    neural_info = analytics.neural_core.predict_price_trend(data)
+                    
+                    selected_basket_data.append({
+                        "ticker": ticker,
+                        "price": price,
+                        "sentiment": sentiment['label'],
+                        "rsi": metrics.get('rsi', 50),
+                        "vol": metrics.get('volatility', 0),
+                        "neural_target": neural_info.get('target_price', 0) if neural_info['status'] == 'Success' else 0,
+                        "neural_conf": neural_info.get('confidence', 0) if neural_info['status'] == 'Success' else 0
+                    })
+                    
+                    with cols_icons[i % 3]:
+                        color = "var(--md-success)" if change >= 0 else "var(--md-error)"
+                        st.markdown(f"""
+                        <div class="glass-panel" style='text-align: center; border-top: 2px solid {color};'>
+                            <div style='font-size: 0.8rem; color: var(--md-text-secondary);'>{ticker}</div>
+                            <div style='font-weight: 700;'>${price:,.2f}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
+    if generate_clicked and selected_basket_data:
+        with st.spinner("Synthesizing institutional data..."):
+            generator = ReportGenerator(kitsune)
+            report = generator.generate_weekly_report(selected_basket_data, lang=st.session_state.get('lang', 'it'))
+            st.markdown("### Strategic Synthesis")
+            st.markdown(report)
+
+def render_archive(t):
+    st.title(t.get('archive_title', 'Archive'))
+    base_dir = "reports"
+    if not os.path.exists(base_dir): os.makedirs(base_dir)
+    files = [f for f in os.listdir(base_dir) if f.endswith(('.md', '.txt'))]
+    if not files:
+        st.info("Archive is empty.")
+        return
+    selected_file = st.selectbox("Select Report", files)
+    if selected_file:
+        with open(os.path.join(base_dir, selected_file), "r", encoding="utf-8") as f:
+            st.markdown(f.read())
+
+def run_background_shadows(model_name, kitsune):
+    """Background thread to run competitive analysis without blocking UI."""
+    try:
+        agent = AgentEngine(model_name=model_name)
         
-        # Initialize state if not present
-        if 'primary_asset' not in st.session_state:
-            st.session_state.primary_asset = "BTC/USDT"
-        if 'secondary_asset' not in st.session_state:
-            st.session_state.secondary_asset = ""
+        # 1. Alpha Hunter Analysis
+        alpha_report = agent.run_alpha_benchmark()
+        kitsune.update_relational_memory(f"ALPHA HUNTER LOG:\n{alpha_report}")
+        
+        # 2. UI Architect Analysis
+        ui_report = agent.run_ui_benchmark()
+        kitsune.update_relational_memory(f"UI ARCHITECT LOG:\n{ui_report}")
+        
+        # 3. Kitsune Oracle (Deep $ATH Research)
+        oracle_report = agent.run_oracle_research()
+        kitsune.update_relational_memory(f"KITSUNE ORACLE LOG:\n{oracle_report}")
+        
+    except Exception as e:
+        print(f"Shadow Agent Thread Error: {e}")
 
-        def apply_snapshot():
-            snap = st.session_state.current_snapshot
-            if snap in snapshots:
-                primary = snapshots[snap]["primary"]
-                secondary = snapshots[snap]["secondary"]
-                st.session_state.primary_asset = primary
-                st.session_state.secondary_asset = secondary
-                # Update the widget internal states directly
-                st.session_state.primary_selector = primary
-                st.session_state.secondary_selector = secondary
+def render_kitsune_terminal(t, kitsune, lang):
+    # Main Layout Split (Balanced 1:1 for better visibility)
+    col_chat, col_sandbox = st.columns([1, 1], gap="medium")
+    
+    with col_chat:
+        # Mode Selector
+        mode = st.radio("UI_MODE", [t["chat_mode_standard"], t["chat_mode_agent"]], 
+                        horizontal=True, label_visibility="collapsed", key="terminal_mode_toggle")
+        is_agent_mode = (mode == t["chat_mode_agent"])
+        
+        st.markdown("<h4 style='margin:0; color:#58A6FF;'>KITSUNE INTERFACE <span style='font-size:0.6rem; color:#8B949E;'>v5.0 PERSISTENT</span></h4>", unsafe_allow_html=True)
+        
+        # Chat History Container
+        chat_placeholder = st.empty()
+        with chat_placeholder.container():
+            if "messages" not in st.session_state: st.session_state.messages = []
+            for m in st.session_state.messages:
+                render_agent_message(m["role"], m["content"], m.get("screenshot"))
 
-        st.selectbox("Select Regime", list(snapshots.keys()), key="current_snapshot", on_change=apply_snapshot)
+        # Multimodal Uploads
+        uploaded_files = st.file_uploader(t.get("upload_label", "Upload Docs/Images"), 
+                                        accept_multiple_files=True, 
+                                        type=['png', 'jpg', 'jpeg', 'pdf', 'docx', 'txt'],
+                                        label_visibility="collapsed",
+                                        key=f"uploader_{st.session_state.get('app_nav_radio', 'dash')}")
+        
+        icon = "🤖" if is_agent_mode else "🧠"
+        prompt = st.chat_input(f"{icon} {t['chat_placeholder']}", key=f"terminal_input_{st.session_state.get('app_nav_radio', 'dash')}")
+        
+        # Quick Commands Chips
+        qc1, qc2, qc3 = st.columns(3)
+        with qc1: 
+            if st.button("🔮 Oracle", use_container_width=True):
+                st.session_state.messages.append({"role": "user", "content": "/oracle"})
+                st.rerun()
+        with qc2:
+            if st.button("🦅 Alpha", use_container_width=True):
+                st.session_state.messages.append({"role": "user", "content": "/alpha"})
+                st.rerun()
+        with qc3:
+            if st.button("🎨 UI", use_container_width=True):
+                st.session_state.messages.append({"role": "user", "content": "/ui"})
+                st.rerun()
 
-        def render_landing_page(t):
-            st.title(f"🦉 {t['vision_title']}")
-            st.markdown("---")
-            
-            # Mission and Strategy in a more balanced layout
-            col1, col2 = st.columns([1, 1], gap="large")
-            
-            with col1:
-                st.markdown(f"### {t['vision_mission']}")
-                st.markdown(f"""
-                <div class='premium-card' style='border-left: 5px solid var(--accent-blue);'>
-                    <p style='font-size: 1.15rem; line-height: 1.7; color: #FFFFFF;'>{t['mission_text']}</p>
-                </div>
-                """, unsafe_allow_html=True)
+    with col_sandbox:
+        # Sandbox Area (Always Present)
+        if "sandbox_logs" not in st.session_state: st.session_state.sandbox_logs = []
+        if "sandbox_screenshot" not in st.session_state: st.session_state.sandbox_screenshot = None
+        
+        # Placeholder for real-time updates during the loop
+        sandbox_ui = st.empty()
+        with sandbox_ui.container():
+            render_agent_sandbox(st.session_state.sandbox_logs, st.session_state.sandbox_screenshot, t["sandbox_title"])
+
+    if prompt:
+        st.session_state.messages.append({"role": "user", "content": prompt, "files": uploaded_files})
+        st.rerun()
+
+    # Process latest message if it's from user
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        latest = st.session_state.messages[-1]
+        user_msg = latest["content"]
+        
+        # Sub-Agent Commands Detection
+        if "agent_engine" not in st.session_state:
+            st.session_state.agent_engine = AgentEngine(model_name=kitsune.model)
+        
+        agent_instance = st.session_state.agent_engine
+        
+        # Reset sandbox for new agent tasks
+        if is_agent_mode or user_msg.startswith("/"):
+            st.session_state.sandbox_logs = []
+            st.session_state.sandbox_screenshot = None
+
+        with st.status("Kitsune Intelligence active...", expanded=True) as status:
+            def on_agent_log(msg):
+                clean_msg = msg.replace("**Model Output**:", "").replace("**Executing Tool**:", "").replace("**Observation**:", "").strip()
                 
-                st.markdown(f"### {t['market_strategy']}")
-                st.markdown(f"""
-                <div class='premium-card' style='border-left: 5px solid var(--accent-green);'>
-                    <p style='font-size: 1.1rem; line-height: 1.7; color: var(--text-main);'>{t['strategy_text']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col2:
-                # Tech Stack and AI Philosophy
-                st.markdown("### Technical Architecture")
-                st.markdown("""
-                <div class='glass-panel'>
-                    <h5 style='color: var(--accent-blue); margin-bottom: 0.5rem;'>Core Stack</h5>
-                    <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem;'>
-                        <div>• Streamlit Engine</div>
-                        <div>• Ollama Local LLM</div>
-                        <div>• CCXT (Crypto)</div>
-                        <div>• yFinance (TradFi)</div>
-                        <div>• Plotly Visuals</div>
-                        <div>• Financial Logic (Py)</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                st.markdown("<br/>", unsafe_allow_html=True)
-                
-                st.markdown("### Private-First AI Philosophy")
-                st.markdown(f"""
-                <div class='glass-panel' style='border-top: 2px solid var(--accent-blue);'>
-                    <p style='font-size: 0.95rem; color: var(--text-dim); font-style: italic;'>
-                        "Your data, your strategy. FinanceSensei performs all high-level reasoning locally via Ollama, 
-                        ensuring that institutional alpha remains in your hands."
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            # Copy-Ready Section
-            st.markdown("---")
-            st.subheader("📋 Institutional Alpha Pitch (Ready for Copy)")
-            st.caption("Copy this professional summary for your pitch decks or social profiles.")
-            
-            content_to_copy = f"""# {t['vision_title']}
-
-## {t['vision_mission']}
-{t['mission_text']}
-
-## {t['market_strategy']}
-{t['strategy_text']}
-
----
-**Tech Stack:** Streamlit | Ollama | CCXT | yFinance | Plotly
-**Philosophy:** Private-First, Sovereign Financial Intelligence.
-"""
-            st.code(content_to_copy, language="markdown")
-
-        if app_mode == "Vision":
-            render_landing_page(t)
-            st.stop()
-
-        def render_report_hub(t, provider, sensei, analytics, all_tickers):
-            st.title(f"📊 {t['report_hub']}")
-            st.markdown(f"> {t['report_outlook']}")
-            
-            col_left, col_right = st.columns([1, 2], gap="large")
-            
-            selected_basket_data = []
-            
-            with col_left:
-                st.markdown(f"#### 🎯 {t['active_selection']}")
-                assets = st.multiselect("Add Assets to Brief", 
-                                        all_tickers,
-                                        default=["BTC/USDT", "ETH/USDT"] if "BTC/USDT" in all_tickers else [])
-                
-                st.divider()
-                generate_clicked = st.button(t["generate_report"], use_container_width=True, type="primary")
-            
-            with col_right:
-                st.markdown(f"#### ⚡ {t['basket_intel']}")
-                if not assets:
-                    st.info("Institutional data will appear here once assets are selected.")
+                if msg.startswith("RETS_IMG:"):
+                    path = msg.replace("RETS_IMG:", "")
+                    if os.path.exists(path):
+                        st.session_state.sandbox_screenshot = path
+                        st.session_state.temp_screenshot = path
                 else:
-                    # Render small glass panels for each asset
-                    cols_icons = st.columns(3)
-                    for i, ticker in enumerate(assets):
-                        with st.spinner(f"Syncing {ticker}..."):
-                            data = provider.fetch_crypto_data(ticker, timeframe='1d', limit=5)
-                            if not data.empty:
-                                close_col = 'close' if 'close' in data.columns else 'Close'
-                                price = data[close_col].iloc[-1]
-                                prev_price = data[close_col].iloc[-2]
-                                change = ((price - prev_price) / prev_price) * 100
-                                rsi = analytics.calculate_rsi(data)
-                                
-                                color = "var(--accent-green)" if change >= 0 else "var(--accent-red)"
-                                glow = "glow-green" if change >= 0 else "glow-red"
-                                
-                                # Store for generator
-                                news = provider.fetch_news(ticker)
-                                sentiment = sensei.analyze_sentiment(news)
-                                selected_basket_data.append({
-                                    "ticker": ticker,
-                                    "price": price,
-                                    "rsi": rsi,
-                                    "vol": data[close_col].pct_change().std(),
-                                    "sentiment": sentiment['label']
-                                })
-                                
-                                with cols_icons[i % 3]:
-                                    st.markdown(f"""
-                                    <div class="glass-panel" style='padding: 0.8rem; margin-bottom: 0.5rem; border-top: 2px solid {color};'>
-                                        <div style='font-size: 0.8rem; color: var(--text-dim); text-align: center;'>{ticker}</div>
-                                        <div style='font-size: 1.1rem; font-weight: 700; text-align: center;'>${price:,.2f}</div>
-                                        <div class="{glow}" style='font-size: 0.75rem; text-align: center;'>{"+" if change >=0 else ""}{change:.1f}%</div>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-
-            if generate_clicked:
-                st.divider()
-                with st.spinner("Sensei is synthesizing institutional data..."):
-                    generator = ReportGenerator(sensei)
-                    report = generator.generate_weekly_report(selected_basket_data, lang=st.session_state.get('lang', 'it'))
+                    thoughts = re.findall(r"Thought:\s*(.*?)(?=Action:|Observation:|Final Answer:|$)", clean_msg, re.DOTALL | re.IGNORECASE)
+                    actions = re.findall(r"Action:\s*(.*?)(?=Action Input:|Observation:|Final Answer:|$)", clean_msg, re.DOTALL | re.IGNORECASE)
+                    observations = re.findall(r"Observation:\s*(.*?)(?=Thought:|Action:|Final Answer:|$)", clean_msg, re.DOTALL | re.IGNORECASE)
                     
-                    st.markdown("### 🦉 Strategic Synthesis")
-                    st.markdown(report)
+                    if thoughts:
+                        for t_text in thoughts:
+                            if t_text.strip(): st.session_state.sandbox_logs.append({"type": "thought", "content": t_text.strip()})
+                    if actions:
+                        for a_text in actions:
+                            if a_text.strip(): st.session_state.sandbox_logs.append({"type": "action", "content": a_text.strip()})
+                    if observations:
+                        for o_text in observations:
+                            if o_text.strip(): st.session_state.sandbox_logs.append({"type": "observation", "content": o_text.strip()})
                     
-                    c1, c2 = st.columns(2)
-                    with c1:
-                        st.download_button(t["export_alpha"], report, file_name=f"FinanceSensei_Report_{datetime.date.today()}.md", use_container_width=True)
-                    with c2:
-                        docx_buffer = generator.generate_docx_report(report)
-                        st.download_button(t["export_word"], docx_buffer, file_name=f"FinanceSensei_Report_{datetime.date.today()}.docx", 
-                                           mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                                           use_container_width=True)
+                    if not (thoughts or actions or observations) and clean_msg:
+                        st.session_state.sandbox_logs.append({"type": "thought", "content": clean_msg})
+                
+                # Dynamic update of sandbox placeholder during execution
+                with sandbox_ui.container():
+                    render_agent_sandbox(st.session_state.sandbox_logs, st.session_state.sandbox_screenshot, t["sandbox_title"])
 
-        if app_mode == "Reports":
-            render_report_hub(t, provider, sensei, analytics, all_tickers)
-            st.stop()
+            if user_msg.lower().startswith("/oracle"):
+                resp = agent_instance.run_oracle_research(on_log=on_agent_log)
+            elif user_msg.lower().startswith("/alpha"):
+                resp = agent_instance.run_alpha_benchmark(on_log=on_agent_log)
+            elif user_msg.lower().startswith("/ui"):
+                resp = agent_instance.run_ui_benchmark(on_log=on_agent_log)
+            elif is_agent_mode:
+                resp = agent_instance.run(user_msg, on_log=on_agent_log)
+            else:
+                resp = kitsune.chat(user_msg, files=latest.get("files"), lang=lang)
+        
+        shot = st.session_state.get('temp_screenshot')
+        st.session_state.messages.append({"role": "assistant", "content": resp, "screenshot": shot})
+        if 'temp_screenshot' in st.session_state: del st.session_state.temp_screenshot
+        st.rerun()
 
-        sensei_sidebar_header(lang=lang)
-        
-        st.subheader(t["discovery_hub"])
-        
-        # Primary Ticker
-        try:
-            p_idx = all_tickers.index(st.session_state.primary_asset)
-        except:
-            p_idx = 0
-        search_ticker = st.selectbox(t["asset_primary"], all_tickers, index=p_idx, key="primary_selector")
-        st.session_state.primary_asset = search_ticker
+def render_world_chain_hub(t, provider, kitsune, lang):
+    st.title("🛡️ " + t.get('nav_athene', 'World Chain Hub'))
+    st.markdown(f"> {t.get('ath_migration_title', 'World Chain Ecosystem Alpha')}")
+    
+    # Tech Diagnostics (RPC)
+    chain_info = provider.get_athene_chain_status()
+    st.markdown(f"#### ⛓️ World Chain Tech-Bridge")
+    t1, t2, t3 = st.columns(3)
+    with t1: st.metric("Network Status", chain_info.get('status', 'N/A'), delta=None if chain_info.get('status') == "Online" else -1)
+    with t2: st.metric("Current Block", f"#{chain_info.get('block', 'N/A')}")
+    with t3: st.metric("Network Capacity", chain_info.get('tps_est', '---'), help="Expected peak TPS on World Chain")
 
-        # Secondary Ticker
-        comp_options = [""] + all_tickers
-        try:
-            s_idx = comp_options.index(st.session_state.secondary_asset)
-        except:
-            s_idx = 0
-        compare_ticker = st.selectbox(t["asset_optional"], comp_options, index=s_idx, key="secondary_selector")
-        st.session_state.secondary_asset = compare_ticker
+    col_main, col_oracle, col_chat = st.columns([1.2, 0.8, 1], gap="medium")
+    
+    with col_main:
+        # A. WLD Miner Intelligence Panel
+        st.markdown(f"#### 💎 {t.get('wld_miner_title', 'WLD Miner Intelligence')}")
+        wld_miner_pool = provider.get_world_chain_assets()["WLD_MINER"]
+        wld_miner_data = provider.fetch_dex_price(wld_miner_pool)
         
-        st.divider()
-        st.subheader(t["scenario_params"])
-        days_sim = st.slider(t["sim_horizon"], 30, 365, 90)
-        simulations = st.number_input(t["path_count"], 10, 1000, 100)
-        
-        st.divider()
-        st.subheader(t["dca_settings"])
-        dca_amount = st.number_input(t["dca_amount"], 10, 10000, 100)
-        dca_freq = st.selectbox(t["frequency"], [7, 14, 30], format_func=lambda x: t["every_days"].format(x))
-        
-        if search_ticker:
-            st.divider()
-            st.subheader(t["strategic_brief"])
-            # This will be populated after asset data is fetched in main
-            st.session_state['current_insight'] = st.session_state.get('current_insight', t["awaiting_data"])
+        w1, w2 = st.columns(2)
+        with w1:
             st.markdown(f"""
-            <div class="glass-panel" style='font-size: 0.85rem; border-left: 3px solid var(--accent-blue);'>
-                {st.session_state['current_insight']}
+            <div class="glass-panel" style='border-top: 2px solid #7EE787;'>
+                <div style='font-size: 0.7rem; color: #8B949E;'>USDC/WLD DEEP LIQUIDITY</div>
+                <div style='font-size: 1.2rem; font-weight: 700; color: #7EE787;'>${wld_miner_data['price']:.10f}</div>
+                <div style='font-size: 0.6rem; color: #8B949E;'>{wld_miner_data['name']}</div>
             </div>
             """, unsafe_allow_html=True)
+        with w2:
+            st.metric(t.get('wld_yield_est', 'Yield Est.'), "12.4% APR", f"{wld_miner_data['change_24h']:.2f}% (24h)")
 
-    # Main Dashboard Header
-    st.markdown("<h1>FINANCE <span style='color:#58A6FF'>SENSEI</span></h1>", unsafe_allow_html=True)
-    # Macro awareness banner
-    macro_insight_banner("Global liquidity is stabilizing. Bitcoin correlation with S&P500 remains high (~85%).")
-
-    # Multi-Asset Overview
-    st.subheader(t["market_snapshot"])
-    cols = st.columns(4)
-    market_assets = ["BTC-USD", "S&P500", "GOLD", "DXY"]
-    
-    for i, asset in enumerate(market_assets):
-        price = provider.get_latest_price(asset)
-        with cols[i]:
-            premium_card(
-                title=asset,
-                value=f"${price:,.2f}" if price else "N/A",
-                subtext="Monitoring Flux" if i % 2 == 0 else "Liquidity High",
-                glow_class="glow-blue" if i % 2 == 0 else "glow-green"
-            )
-
-    # Search / Detailed Analysis
-    if search_ticker:
-        data = provider.get_asset_data(search_ticker)
-        if not data.empty:
-            col = 'close' if 'close' in data.columns else 'Close'
-            current_price = float(data[col].iloc[-1])
-            returns = data[col].pct_change().dropna()
-            last_change = float(returns.iloc[-1] * 100)
-            
-            asset_header(search_ticker, current_price, last_change)
-            
-            # Analytics Row
-            a1, a2, a3 = st.columns(3)
-            ath_stats = analytics.get_ath_stats(data)
-            vol = analytics.calculate_volatility(data).iloc[-1]
-            sharpe = analytics.calculate_sharpe_ratio(returns)
-            
-            with a1: premium_card(t["volatility"], f"{vol:.1%}", "Dynamic Risk Profile", "glow-blue")
-            with a2: premium_card(t["ath_dist"], f"{ath_stats['distance_pct']:.1f}%", f"ATH: ${ath_stats['ath']:,.2f}", "glow-green")
-            with a3: premium_card(t["sharpe"], f"{sharpe:.2f}", "Risk-Adjusted Alpha", "glow-blue")
-
-            # Chart and Correlation Matrix
-            st.divider()
-            c1, c2 = st.columns([2, 1])
-            
-            with c1:
-                tabs_list = [t["price_action"], t["monte_carlo"], t["scenario_sandbox"], t["inst_intel"], t["chat_tab"]]
-                if compare_ticker: tabs_list.append(t["rel_perf"])
-                tabs = st.tabs(tabs_list)
-                
-                with tabs[0]:
-                    fig = go.Figure(data=[go.Candlestick(x=data.index,
-                                    open=data['open'] if 'open' in data else data['Open'],
-                                    high=data['high'] if 'high' in data else data['High'],
-                                    low=data['low'] if 'low' in data else data['Low'],
-                                    close=data['close'] if 'close' in data else data['Close'])])
-                    fig.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", 
-                                    xaxis=dict(gridcolor="#21262d"), yaxis=dict(gridcolor="#21262d"), height=450, margin=dict(t=0, b=0, l=0, r=0))
-                    st.plotly_chart(fig, use_container_width=True)
-                
-                with tabs[1]:
-                    mu = returns.mean() * 252
-                    sigma = returns.std() * np.sqrt(252)
-                    paths = analytics.monte_carlo_simulation(current_price, days_sim, mu, sigma, int(simulations))
-                    
-                    fig_mc = go.Figure()
-                    for i in range(min(int(simulations), 50)):
-                        fig_mc.add_trace(go.Scatter(y=paths[i], mode='lines', line=dict(width=0.5, color='rgba(88, 166, 255, 0.15)'), showlegend=False))
-                    
-                    p95 = np.percentile(paths, 95, axis=0)
-                    p05 = np.percentile(paths, 5, axis=0)
-                    median_path = np.median(paths, axis=0)
-                    
-                    fig_mc.add_trace(go.Scatter(y=p95, mode='lines', line=dict(width=0), showlegend=False))
-                    fig_mc.add_trace(go.Scatter(y=p05, mode='lines', line=dict(width=0), fill='tonexty', fillcolor='rgba(126, 231, 135, 0.05)', showlegend=False))
-                    fig_mc.add_trace(go.Scatter(y=median_path, mode='lines', line=dict(width=3, color='#7EE787'), name='Median Projection'))
-                    
-                    fig_mc.update_layout(template="plotly_dark", 
-                                        paper_bgcolor="#1E1E1E", 
-                                        plot_bgcolor="#1E1E1E",
-                                        xaxis=dict(title="Days Ahead", gridcolor="#333333", zerolinecolor="#333333"), 
-                                        yaxis=dict(title="Price Projection", gridcolor="#333333", zerolinecolor="#333333"), 
-                                        font=dict(color="#E8EAED"),
-                                        height=450, 
-                                        margin=dict(t=30, b=30, l=30, r=0))
-                    st.plotly_chart(fig_mc, use_container_width=True)
-
-                with tabs[2]:
-                    st.subheader("DCA Accumulation Simulator")
-                    dca_stats = analytics.calculate_dca(data, dca_amount, dca_freq)
-                    
-                    s1, s2, s3 = st.columns(3)
-                    with s1: premium_card("Total Invested", f"${dca_stats['total_invested']:,.0f}", "Capital Deployment", "glow-blue")
-                    with s2: premium_card("Current Value", f"${dca_stats['current_value']:,.0f}", f"Units: {dca_stats['total_units']:.4f}", "glow-green")
-                    with s3: 
-                        color = "glow-green" if dca_stats['roi_pct'] >= 0 else "glow-blue"
-                        premium_card("ROI", f"{dca_stats['roi_pct']:.1f}%", f"Avg Cost: ${dca_stats['avg_cost']:,.2f}", color)
-                    
-                    st.markdown("""
-                    <div class='glass-panel'>
-                        <strong>Note the capital efficiency.</strong> 
-                        A disciplined DCA strategy often outperforms raw market timing in volatile regimes.
-                    </div>
-                    """, unsafe_allow_html=True)
-
-                with tabs[3]:
-                    st.subheader(t["inst_alpha_feed"])
-                    i1, i2 = st.columns([1, 1])
-                    
-                    with i1:
-                        st.markdown(f"**{t['order_flow']}**")
-                        order_book = provider.fetch_order_book(search_ticker)
-                        imbalance = analytics.analyze_order_imbalance(order_book)
-                        
-                        # Visualization of depth
-                        bids = pd.DataFrame(order_book.get('bids', []), columns=['price', 'volume'])
-                        asks = pd.DataFrame(order_book.get('asks', []), columns=['price', 'volume'])
-                        
-                        fig_depth = go.Figure()
-                        fig_depth.add_trace(go.Bar(x=bids['price'], y=bids['volume'], name='Bids', marker_color='#7EE787'))
-                        fig_depth.add_trace(go.Bar(x=asks['price'], y=asks['volume'], name='Asks', marker_color='#FF7B72'))
-                        fig_depth.update_layout(template="plotly_dark", height=300, barmode='overlay', 
-                                                margin=dict(t=0, b=0, l=0, r=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-                        st.plotly_chart(fig_depth, use_container_width=True)
-                        st.caption(f"Bias: {imbalance['bias']} (Ratio: {imbalance['ratio']:.2f})")
-                    
-                    with i2:
-                        st.markdown(f"**{t['whale_monitor']}**")
-                        # Use 1h data for crypto to make whale detection more 'real' and granular
-                        if "/" in search_ticker:
-                            with st.spinner("Analyzing high-frequency volume..."):
-                                pulse_data = provider.fetch_crypto_data(search_ticker, timeframe='1h', limit=48)
-                        else:
-                            pulse_data = data
-                            
-                        whales = analytics.detect_whale_activity(pulse_data)
-                        if not whales.empty:
-                            for idx, row in whales.tail(3).iterrows():
-                                time_str = idx.strftime('%d/%m %H:%M')
-                                st.markdown(f"""
-                                <div class='glass-panel' style='padding: 0.5rem; margin-bottom: 0.5rem; border-left: 3px solid var(--accent-green);'>
-                                    <span style='font-size: 0.8rem; color: #8B949E;'>{time_str}</span><br/>
-                                    <strong>{t['whale_detected']}</strong><br/>
-                                    <span style='color: var(--accent-green)'>{t['vol_spike']}</span>
-                                </div>
-                                """, unsafe_allow_html=True)
-                        else:
-                            st.info(t["no_anomalies"])
-
-                    st.divider()
-                    st.markdown(f"**{t['sentiment_pulse']}**")
-                    news = provider.fetch_news(search_ticker)
-                    sentiment = sensei.analyze_sentiment(news)
-                    
-                    cols_s = st.columns([1, 2])
-                    with cols_s[0]:
-                        val = sentiment['score'] * 100
-                        color = "#7EE787" if val > 60 else "#FF7B72" if val < 40 else "#58A6FF"
-                        st.markdown(f"""
-                        <div style='text-align: center; padding: 1rem; border: 2px solid {color}; border-radius: 50%; width: 100px; height: 100px; margin: auto;'>
-                            <div style='font-size: 1.5rem; font-weight: 800; margin-top: 15px; color: {color};'>{val:.0f}</div>
-                            <div style='font-size: 0.6rem; color: var(--text-dim);'>{sentiment['label']}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    with cols_s[1]:
-                        explanation = sentiment.get('explanation', 'Analyzing market sentiment patterns...')
-                        st.markdown(f"""
-                        <div class='glass-panel' style='border-top: 2px solid {color}; padding: 0.8rem;'>
-                            <p style='font-size: 0.85rem; line-height: 1.4; color: var(--md-text-primary); margin: 0;'>
-                                <strong>Sensei View:</strong> {explanation}
-                            </p>
-                        </div>
-                        """, unsafe_allow_html=True)
-
-                    st.divider()
-                    st.markdown(f"**📰 {t['news_intel_feed']}**")
-                    if news:
-                        for article in news[:5]:
-                            # Handle YFinance nested structure
-                            content = article.get('content', article)
-                            if isinstance(content, dict):
-                                title = content.get('title', article.get('title', 'News Article'))
-                                summary = content.get('summary', content.get('description', 'No summary available.'))
-                                click_url = content.get('clickThroughUrl')
-                                link = click_url.get('url', '#') if click_url and isinstance(click_url, dict) else article.get('link', '#')
-                                prov = content.get('provider')
-                                news_source = prov.get('displayName', 'Source') if prov and isinstance(prov, dict) else 'Source'
-                            else:
-                                title = article.get('title', 'News Article')
-                                summary = article.get('summary', 'No summary available.')
-                                link = article.get('link', '#')
-                                news_source = article.get('publisher', 'Source')
-                            
-                            with st.expander(f"🔹 {title[:80]}..."):
-                                st.write(f"**{news_source}**")
-                                st.write(summary if summary else "No summary available.")
-                                # Always show a link - if no direct link, search for it
-                                if link and link != '#':
-                                    st.link_button(f"📖 {t['read_more']}", link)
-                                else:
-                                    st.link_button(f"🔍 Search Article", f"https://www.google.com/search?q={title[:50]}")
-                    else:
-                        st.info("No recent institutional news found for this asset.")
-
-                    # News context is already factored into sentiment analysis above
-
-                with tabs[4]:
-                    st.subheader(t["chat_tab"])
-                    
-                    # Initialize chat history
-                    if "messages" not in st.session_state:
-                        st.session_state.messages = [] # Initialize as empty, welcome message is now markdown
-                    
-                    # File Uploader
-                    with st.expander(f"📁 {t.get('upload_docs', 'Upload Documents/Images')}", expanded=False):
-                        uploaded_files = st.file_uploader(
-                            t.get('upload_label', "Drag and drop PNG, JPG, PDF, DOCX"),
-                            type=['png', 'jpg', 'jpeg', 'pdf', 'docx', 'txt'],
-                            accept_multiple_files=True,
-                            key="chat_uploads"
-                        )
-                        if uploaded_files:
-                            st.caption(t.get('files_processed', "{} attached files processed.").format(len(uploaded_files)))
-
-                    # Chat history
-                    for message in st.session_state.messages:
-                        avatar = "👤" if message["role"] == "user" else "🦉"
-                        with st.chat_message(message["role"], avatar=avatar):
-                            st.markdown(message["content"])
-
-                    # Suggestion Chips (Google Style)
-                    # We place them in a container to keep them near the bottom if possible, 
-                    # but typically they push up with content. 
-                    st.markdown("---")
-                    cols_chips = st.columns([1, 1, 1, 2]) # 3 chips + spacer
-                    chip_prompt = None
-                    
-                    if cols_chips[0].button(f"🌍 {t.get('chips_outlook', 'Macro Outlook')}", use_container_width=True):
-                        chip_prompt = "Analyze the current global macro outlook and its impact on crypto."
-                    
-                    if cols_chips[1].button(f"💼 {t.get('chips_portfolio', 'Portfolio Check')}", use_container_width=True):
-                        chip_prompt = "Review the current active asset selection and suggest risk adjustments."
-                        
-                    if cols_chips[2].button(f"🐋 {t.get('chips_whale', 'Whale Alerts')}", use_container_width=True):
-                        chip_prompt = "Check for any recent whale activity or volume anomalies."
-
-                    # Chat input handling
-                    user_input = st.chat_input(t["chat_placeholder"])
-                    
-                    # Determine active prompt (Input takes precedence, then chips)
-                    active_prompt = user_input if user_input else chip_prompt
-
-                    if active_prompt:
-                        # Display user message
-                        st.session_state.messages.append({"role": "user", "content": active_prompt})
-                        with st.chat_message("user", avatar="👤"):
-                            st.markdown(active_prompt)
-                            if uploaded_files:
-                                st.caption(f"📎 {len(uploaded_files)} file(s) attached")
-
-                        with st.chat_message("assistant", avatar="🦉"):
-                            with st.spinner("Sensei is thinking..."):
-                                # Pass files to Sensei
-                                response = sensei.chat(active_prompt, files=uploaded_files, lang=lang)
-                                st.markdown(response)
-                                st.session_state.messages.append({"role": "assistant", "content": response})
-                        
-                        # Rerun to update chat history visually immediately if needed, 
-                        # though Streamlit usually handles this.
-                        st.rerun()
-
-                if compare_ticker and len(tabs) > 5:
-                    with tabs[5]:
-                        st.subheader(f"Strategy: {search_ticker} / {compare_ticker}")
-                        comp_data = provider.get_asset_data(compare_ticker)
-                        if not comp_data.empty:
-                            c_col = 'close' if 'close' in comp_data.columns else 'Close'
-                            # Normalized performance
-                            norm_1 = data[col] / data[col].iloc[0]
-                            norm_2 = comp_data[c_col] / comp_data[c_col].iloc[0]
-                            
-                            fig_rel = go.Figure()
-                            fig_rel.add_trace(go.Scatter(x=data.index, y=norm_1, name=search_ticker, line=dict(color='#58A6FF')))
-                            fig_rel.add_trace(go.Scatter(x=comp_data.index, y=norm_2, name=compare_ticker, line=dict(color='#7EE787')))
-                            
-                            fig_rel.update_layout(template="plotly_dark", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                                                 yaxis_title="Normalized Return (1.0 Start)", height=450)
-                            st.plotly_chart(fig_rel, use_container_width=True)
-
-            with c2:
-                st.subheader(t["corr_matrix"])
-                # Fetch comparison data for correlation
-                with st.spinner("Syncing Alpha..."):
-                    macro_dfs = {
-                        "S&P500": provider.get_asset_data("S&P500"),
-                        "GOLD": provider.get_asset_data("GOLD"),
-                        "DXY": provider.get_asset_data("DXY"),
-                        "BTC": provider.get_asset_data("BTC-USD")
-                    }
-                    if compare_ticker:
-                        macro_dfs[compare_ticker] = provider.get_asset_data(compare_ticker)
-                        
-                    corr_df = analytics.calculate_correlations(data, macro_dfs)
-                
-                if not corr_df.empty:
-                    for idx, row in corr_df.iterrows():
-                        val = row['Correlation']
-                        glow = "glow-green" if val > 0.5 else "glow-blue" if val > 0 else "glow-blue" # simplified
-                        st.markdown(f"""
-                        <div class="glass-panel" style='margin-bottom: 0.8rem; display: flex; justify-content: space-between;'>
-                            <span>{row['Asset']}</span>
-                            <span class="{glow}" style='font-weight: 600;'>{val:.2f}</span>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    
-                    # Sensei Insight logic
-                    strongest = corr_df.iloc[corr_df['Correlation'].abs().idxmax()]
-                    rsi = analytics.calculate_rsi(data)
-                    
-                    insight_metrics = {
-                        "volatility": vol,
-                        "ath_distance": ath_stats['distance_pct'],
-                        "sharpe": sharpe,
-                        "rsi": rsi,
-                        "top_correlation": strongest.to_dict()
-                    }
-                    st.session_state['current_insight'] = sensei.get_insight(search_ticker, insight_metrics, lang=lang)
-                    st.info(f"Sensei Summary: {st.session_state['current_insight']}")
-                else:
-                    st.warning("Insufficient data for correlation mapping.")
-        else:
-            st.error("Asset not found or connection error.")
-
-    # Universal Legal Disclaimer Footer
-    st.divider()
-    st.markdown(f"""
-        <div style='text-align: center; padding: 2rem; color: #8B949E; font-size: 0.75rem; border-top: 1px solid #30363D;'>
-            {t['disclaimer']}
+        # B. Athene Network Migration Tracker Card
+        st.markdown(f"""
+        <div class="glass-panel" style='border-top: 2px solid #58A6FF; margin: 1.5rem 0;'>
+            <div style='display: flex; justify-content: space-between; align-items: center;'>
+                <h4 style='margin:0;'>Athene Network Migration Tracker 🌍</h4>
+                <span style='background: rgba(88, 166, 255, 0.1); color: #58A6FF; padding: 2px 8px; border-radius: 10px; font-size: 0.6rem;'>LIVE SYNC</span>
+            </div>
+            <div style='margin-top: 1rem; background: #30363D; height: 10px; border-radius: 5px; overflow: hidden;'>
+                <div style='background: linear-gradient(90deg, #58A6FF, #7EE787); width: 68%; height: 100%;'></div>
+            </div>
         </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+        # Intelligence Upgrade Button
+        if st.button("🚀 Upgrade to World-V2 Intelligence", help="Pull the specialized World Chain model to Ollama"):
+            with st.status("Requesting Core from Hive Mind...", expanded=True):
+                success = kitsune.pull_model("athene-v2")
+                if success:
+                    st.success("World-V2 Intelligence successfully added.")
+                else:
+                    st.warning("Download initiated in background.")
+        
+        # C. Ecosystem Calculator
+        st.markdown(f"#### {t.get('ath_swap_calc', 'Ecosystem Calculator')}")
+        c1, c2 = st.columns(2)
+        with c1:
+            base_amt = st.number_input(t.get('ath_gem_balance', 'GEM/WLD Amount'), value=1000)
+        with c2:
+            st.metric("Est. USDC Value", f"${base_amt * wld_miner_data['price']:,.2f}") 
+            
+        # D. Market Pulse
+        st.divider()
+        st.markdown("#### Real-time World Hub Prices (On-Chain)")
+        atn_pool = provider.get_world_chain_assets()["ATHENE"]
+        atn_data = provider.fetch_dex_price(atn_pool)
+        
+        p1, p2 = st.columns(2)
+        with p1: st.metric("WLD Miner / WETH", f"${wld_miner_data['price']:.10f}", f"{wld_miner_data['change_24h']:.2f}%")
+        with p2: 
+            st.metric("Athene Network (ATN)", f"${atn_data['price']:.8f}", f"{atn_data['change_24h']:.2f}%")
+
+    with col_oracle:
+        st.markdown(f"#### 🔮 {t.get('ath_oracle_intel', 'Oracle World Intel')}")
+        oracle_intel = kitsune._get_relational_context()
+        if "ORACLE" in oracle_intel.upper() or "WLD" in oracle_intel.upper():
+            logs = [line for line in oracle_intel.split('\n') if any(x in line.upper() for x in ['ORACLE', 'ATH', 'WLD', 'MINER'])]
+            for log in logs[-8:]:
+                st.info(log)
+        else:
+            st.info("The Oracle is currently monitoring WLD distribution and $ATH liquidity bridging...")
+
+    with col_chat:
+        render_kitsune_terminal(t, kitsune, lang)
+
+def main():
+    try:
+        # Load Engines
+        provider, analytics, kitsune = get_engines()
+        
+        # Trigger Shadow Agents (Background)
+        if 'shadow_agents_started' not in st.session_state:
+            st.session_state.shadow_agents_started = True
+            threading.Thread(target=run_background_shadows, args=(kitsune.model, kitsune), daemon=True).start()
+        
+        # Navigation & Language Logic (Top-level Header)
+        t_en = TRANSLATIONS['en']
+        t_it = TRANSLATIONS['it']
+        
+        # Header Area
+        render_header(None)
+        h_logo, h_title, h_status, h_lang = st.columns([0.5, 2, 2, 1])
+        
+        with h_logo: render_mascot(size=40)
+        with h_title:
+            st.markdown("<h3 style='color:#58A6FF; margin:0;'>KITSUNE FINANCE</h3>", unsafe_allow_html=True)
+            app_mode = st.radio("NAV_V2", ["Dashboard", "Reports", "Athene Hub", "Archive"], horizontal=True, label_visibility="collapsed", key="app_nav_radio")
+        
+        with h_status:
+            # High-frequency Autodiscovery (Silent every rerun)
+            new_model = kitsune.discover_active_model()
+            if new_model != st.session_state.get('discovered_model'):
+                st.session_state.discovered_model = new_model
+                st.toast(f"Kitsune synced with {new_model}", icon="🦊")
+            
+            current_model = st.session_state.get('discovered_model', new_model)
+            kitsune.model = current_model
+            
+            st.markdown(f"""
+            <div style='padding: 0.3rem 0.8rem; border-radius: 6px; border: 1px solid #30363D; background: #161B22; display: inline-block;'>
+                <span style='color:#8B949E; font-size: 0.7rem;'>OLLAMA:</span> 
+                <span style='color:#7EE787; font-size: 0.8rem; font-weight: 500;'>{current_model}</span>
+                <span style='color:#58A6FF; font-size: 0.6rem; margin-left: 5px; border-left: 1px solid #30363D; padding-left: 5px;'>🕵️ SHADOW MODE ACTIVE</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with h_lang:
+            c1, c2 = st.columns(2)
+            with c1:
+                lang_selection = st.selectbox("L", options=["🇮🇹", "🇺🇸"], label_visibility="collapsed", key="lang_v2")
+                lang = "it" if lang_selection == "🇮🇹" else "en"
+                st.session_state.lang = lang
+                t = TRANSLATIONS.get(lang, t_en)
+            with c2:
+                st.session_state.agent_mode = st.toggle("🤖", value=st.session_state.get('agent_mode', False), key="agent_toggle_v2")
+
+        st.divider()
+
+        # Strategy Configuration (DCA Inputs)
+        with st.expander("🛠️ Strategy Config / DCA", expanded=False):
+            c1, c2 = st.columns(2)
+            with c1:
+                dca_amount = st.number_input(t.get('dca_amount', 'DCA Amount'), value=100)
+            with c2:
+                dca_freq_label = st.selectbox(t.get('dca_frequency', 'Frequency'), ['Daily', 'Weekly', 'Monthly'], index=1)
+                dca_freq = {'Daily': 1, 'Weekly': 7, 'Monthly': 30}.get(dca_freq_label, 7)
+
+        # Asset Data Cache
+        crypto_tickers = provider.get_all_crypto_tickers()
+        macro_tickers = list(provider.macro_tickers.keys())
+        all_tickers = macro_tickers + crypto_tickers
+
+        if app_mode == "Reports":
+            render_report_hub(t, provider, kitsune, analytics, all_tickers)
+        elif app_mode == "Athene Hub":
+            render_world_chain_hub(t, provider, kitsune, lang)
+        elif app_mode == "Archive":
+            render_archive(t)
+        else:
+            # DASHBOARD
+            macro_insight_banner("Global markets monitoring active. Kitsune is scanning for liquidity cycles.")
+            
+            # Asset Selectors
+            c1, c2 = st.columns(2)
+            with c1:
+                primary_default = "BTC/USDT"
+                if "ATH/USDT" in all_tickers: primary_default = "ATH/USDT"
+                elif "BTC/USDT" in all_tickers: primary_default = "BTC/USDT"
+                
+                primary = st.selectbox(t["asset_primary"], all_tickers, index=all_tickers.index(primary_default) if primary_default in all_tickers else 0)
+            with c2:
+                secondary = st.selectbox(t["asset_optional"], [""] + all_tickers)
+
+            st.divider()
+            
+            # --- TWO COLUMN TERMINAL LAYOUT ---
+            col_data, col_chat = st.columns([1.5, 1], gap="medium")
+            
+            with col_chat:
+                render_kitsune_terminal(t, kitsune, lang)
+
+            with col_data:
+                # Market Overview
+                cols = st.columns(4)
+            for i, tick in enumerate(["BTC-USD", "S&P500", "GOLD", "DXY"]):
+                p = provider.get_latest_price(tick)
+                with cols[i]:
+                    premium_card(tick, f"${p:,.2f}" if p else "N/A", "Market Pulse")
+
+            # Detailed Analysis
+            if primary:
+                data = provider.get_asset_data(primary)
+                if not data.empty:
+                    col = 'close' if 'close' in data.columns else 'Close'
+                    price = float(data[col].iloc[-1])
+                    returns = data[col].pct_change().dropna()
+                    change = float(returns.iloc[-1] * 100) if not returns.empty else 0.0
+                    
+                    asset_header(primary, price, change)
+                    
+                    tabs = st.tabs([t["price_action"], t["monte_carlo"], t["scenario_sandbox"], t["inst_intel"], t["neural_prediction"]])
+                    
+                    with tabs[0]:
+                        fig = go.Figure(data=[go.Candlestick(x=data.index,
+                                        open=data['open'] if 'open' in data else data['Open'],
+                                        high=data['high'] if 'high' in data else data['High'],
+                                        low=data['low'] if 'low' in data else data['Low'],
+                                        close=data[col])])
+                        fig.update_layout(template="plotly_dark", height=400, margin=dict(t=0,b=0,l=0,r=0))
+                        st.plotly_chart(fig, use_container_width=True)
+                    
+                    with tabs[1]:
+                        # Monte Carlo
+                        mu = returns.mean() * 252
+                        sigma = returns.std() * np.sqrt(252)
+                        paths = analytics.monte_carlo_simulation(price, 90, mu, sigma, 100)
+                        
+                        fig_mc = go.Figure()
+                        for i in range(50):
+                            fig_mc.add_trace(go.Scatter(y=paths[i], mode='lines', line=dict(width=0.5, color='rgba(88, 166, 255, 0.1)'), showlegend=False))
+                        
+                        median_path = np.median(paths, axis=0)
+                        fig_mc.add_trace(go.Scatter(y=median_path, mode='lines', line=dict(width=3, color='#7EE787'), name='Median Projection'))
+                        fig_mc.update_layout(
+                            template="plotly_dark",
+                            plot_bgcolor='rgba(0,0,0,1)',
+                            paper_bgcolor='rgba(0,0,0,1)',
+                            height=400,
+                            margin=dict(t=30, b=30, l=30, r=0),
+                            xaxis=dict(gridcolor='#161B22'),
+                            yaxis=dict(gridcolor='#161B22')
+                        )
+                        st.plotly_chart(fig_mc, use_container_width=True)
+
+                    with tabs[2]:
+                        # DCA Simulator
+                        dca_stats = analytics.calculate_dca(data, dca_amount, dca_freq)
+                        s1, s2, s3 = st.columns(3)
+                        with s1: premium_card("Invested", f"${dca_stats['total_invested']:,.0f}", "Capital")
+                        with s2: premium_card("Value", f"${dca_stats['current_value']:,.0f}", f"Units: {dca_stats['total_units']:.2f}")
+                        with s3: premium_card("ROI", f"{dca_stats['roi_pct']:.1f}%", f"Avg Cost: ${dca_stats['avg_cost']:,.2f}")
+
+                    with tabs[3]:
+                        # Institutional Intel
+                        i1, i2 = st.columns(2)
+                        with i1:
+                            st.markdown(f"**{t['order_flow']}**")
+                            ob = provider.fetch_order_book(primary)
+                            imb = analytics.analyze_order_imbalance(ob)
+                            st.metric("Bias", imb['bias'], f"Ratio: {imb['ratio']:.2f}")
+                        with i2:
+                            st.markdown(f"**{t['sentiment_pulse']}**")
+                            news = provider.fetch_news(primary)
+                            sent = kitsune.analyze_sentiment(news)
+                            st.metric("Sentiment", sent['label'], f"Score: {sent['score']:.2f}")
+
+                    with tabs[4]:
+                        # Neural Hub
+                        st.markdown(f"#### 🧠 {t['neural_prediction']} Engine")
+                        pred_data = analytics.neural_core.predict_price_trend(data)
+                        
+                        if pred_data["status"] == "Success":
+                            c1, c2, c3 = st.columns(3)
+                            with c1: st.metric(t["neural_target"], f"${pred_data['target_price']:.6f}")
+                            with c2: st.metric(t["neural_trend"], f"{pred_data['change_pct']:.2f}%", delta=f"{pred_data['change_pct']:.2f}%")
+                            with c3: st.metric(t["neural_confidence"], f"{pred_data['confidence']*100:.1f}%")
+                            
+                            # Gradient Forecast Viz
+                            forecast_fig = go.Figure()
+                            forecast_fig.add_trace(go.Scatter(y=pred_data['forecast_path'], mode='lines+markers', 
+                                                           line=dict(color='#7EE787', width=4), 
+                                                           marker=dict(size=8, color='#58A6FF'),
+                                                           name='Neural Forecast'))
+                            forecast_fig.update_layout(template="plotly_dark", height=300, 
+                                                     title="Technical Directional Forecast (7D Cluster)",
+                                                     margin=dict(t=30, b=0, l=30, r=0))
+                            st.plotly_chart(forecast_fig, use_container_width=True)
+                        else:
+                            st.warning(pred_data["message"])
+                    
+                    
+            # Correlation Sidebar (Column or extra section)
+            st.divider()
+            with st.expander(t["corr_matrix"], expanded=True):
+                macro_dfs = {
+                    "S&P500": provider.get_asset_data("S&P500"),
+                    "GOLD": provider.get_asset_data("GOLD"),
+                    "DXY": provider.get_asset_data("DXY"),
+                    "BTC": provider.get_asset_data("BTC-USD")
+                }
+                corr_df = analytics.calculate_correlations(data, macro_dfs)
+                if not corr_df.empty:
+                    for _, row in corr_df.iterrows():
+                        st.write(f"**{row['Asset']}**: {row['Correlation']:.2f}")
+
+        # Universal Legal Disclaimer Footer
+        st.divider()
+        st.markdown(f"""
+            <div style='text-align: center; padding: 2rem; color: #8B949E; font-size: 0.75rem; border-top: 1px solid #30363D;'>
+                {t['disclaimer']}
+                <br/><br/>
+                <strong>Kitsune Finance by Kitsune Labs</strong>
+            </div>
+        """, unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"Critical Runtime Exception: {e}")
+        st.exception(e)
 
 if __name__ == "__main__":
     main()
