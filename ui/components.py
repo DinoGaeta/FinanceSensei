@@ -186,8 +186,8 @@ def render_agent_sandbox(logs: list, current_screenshot: str = None, title: str 
         background: #0D1117;
         display: flex;
         flex-direction: column;
+        height: 600px;
         overflow: hidden;
-        height: 100%;
     }}
     .browser-header {{
         background: #161B22;
@@ -215,19 +215,49 @@ def render_agent_sandbox(logs: list, current_screenshot: str = None, title: str 
     }}
     .live-indicator {{ display: flex; align-items: center; gap: 6px; }}
     .live-dot {{ width: 6px; height: 6px; border-radius: 50%; background: #F85149; animation: pulse 1.5s infinite; }}
-    .content-area {{ flex-grow: 1; overflow-y: auto; padding: 0.8rem; }}
-    .screenshot-wrapper {{
-        margin-bottom: 1rem;
-        border-radius: 4px;
+    
+    .viewport {{
+        background: #010409;
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         overflow: hidden;
-        border: 1px solid #30363D;
-        background: #000;
-        aspect-ratio: 16/9;
+        position: relative;
+        min-height: 0;
+    }}
+    
+    .screenshot-wrapper {{
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
     }}
-    .screenshot-wrapper img {{ width: 100%; height: 100%; object-fit: contain; }}
+    .screenshot-wrapper img {{
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        display: block;
+    }}
+    
+    .console-panel {{
+        height: 200px;
+        background: #0D1117;
+        border-top: 1px solid #30363D;
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+    }}
+
+    .placeholder {{
+        color: #30363D;
+        font-size: 2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }}
     .idle-message {{ color: #8B949E; font-style: italic; text-align: center; margin-top: 4rem; }}
     .trace-header {{ margin-bottom: 0.8rem; font-size: 0.7rem; color: #8B949E; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }}
     .log-entry {{ padding: 0.6rem 0.8rem; margin-bottom: 0.6rem; border-radius: 0 4px 4px 0; }}
@@ -253,17 +283,28 @@ def render_agent_sandbox(logs: list, current_screenshot: str = None, title: str 
             </div>
         </div>
         <div class="content-area">
-            {screenshot_html}
-            {idle_html}
-            {logs_html}
+            <div class="viewport">
+                {screenshot_html if screenshot_html else '<div class="placeholder"><span>🕸️</span><span style="font-size:0.8rem;">Ready to Browse</span></div>'}
+            </div>
+            
+            <div class="console-panel">
+                <div class="logs-scroll">
+                    {logs_html if logs else '<div class="trace-header">Waiting for Signal...</div>'}
+                </div>
+            </div>
         </div>
     </div>
+    <script>
+        // Auto scroll logs
+        const el = document.querySelector('.logs-scroll');
+        if(el) el.scrollTop = el.scrollHeight;
+    </script>
     </body>
     </html>
     """
     
     import streamlit.components.v1 as components
-    components.html(sandbox_html, height=550, scrolling=True)
+    components.html(sandbox_html, height=600, scrolling=False)
 
 def macro_insight_banner(message: str):
     """Render a top-level awareness banner."""

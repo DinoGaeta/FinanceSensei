@@ -20,6 +20,16 @@ class KitsuneAI:
         self.model = model or self.discover_active_model()
         self.memory_path = r"C:\Users\corra\Desktop\memoria_gemini.txt"
 
+    def get_migration_progress(self) -> float:
+        """Calculate the real-time theoretical migration progress based on ecosystem roadmap."""
+        # Simulated Milestone Dates (Start: Nov 1 2024, End: June 1 2026)
+        start_ts = datetime.datetime(2024, 11, 1).timestamp()
+        end_ts = datetime.datetime(2026, 6, 1).timestamp()
+        current_ts = datetime.datetime.now().timestamp()
+        
+        progress = (current_ts - start_ts) / (end_ts - start_ts)
+        return max(0.0, min(0.99, progress)) * 100
+
     def pull_model(self, model_name: str):
         """Request Ollama to pull a specific model in the background."""
         try:

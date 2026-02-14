@@ -27,6 +27,7 @@ from engine.analytics import AnalyticsEngine
 from engine.kitsune import KitsuneAI
 from engine.report_generator import ReportGenerator
 from engine.agent import AgentEngine
+from engine.generative_ui import GenerativeRenderer
 
 # Custom Styling
 st.markdown("""
@@ -281,10 +282,24 @@ def render_kitsune_terminal(t, kitsune, lang):
         if "sandbox_logs" not in st.session_state: st.session_state.sandbox_logs = []
         if "sandbox_screenshot" not in st.session_state: st.session_state.sandbox_screenshot = None
         
-        # Placeholder for real-time updates during the loop
-        sandbox_ui = st.empty()
-        with sandbox_ui.container():
-            render_agent_sandbox(st.session_state.sandbox_logs, st.session_state.sandbox_screenshot, t["sandbox_title"])
+        tab_sandbox, tab_canvas = st.tabs(["👁️ " + t.get("sandbox_title", "Sandbox"), "🎨 Generative Canvas"])
+        
+        with tab_sandbox:
+            # Placeholder for real-time updates during the loop
+            sandbox_ui = st.empty()
+            with sandbox_ui.container():
+                render_agent_sandbox(st.session_state.sandbox_logs, st.session_state.sandbox_screenshot, t["sandbox_title"])
+
+        with tab_canvas:
+            if os.path.exists("canvas_state.json"):
+                with open("canvas_state.json", "r", encoding="utf-8") as f:
+                    try:
+                        canvas_data = json.load(f)
+                        GenerativeRenderer.render(canvas_data)
+                    except Exception as e:
+                        st.error(f"Canvas Render Error: {e}")
+            else:
+                st.info("Ask Kitsune to 'design a dashboard', 'show a table', or 'draw a diagram' to activate this canvas.")
 
     if prompt:
         st.session_state.messages.append({"role": "user", "content": prompt, "files": uploaded_files})
@@ -386,14 +401,15 @@ def render_world_chain_hub(t, provider, kitsune, lang):
             st.metric(t.get('wld_yield_est', 'Yield Est.'), "12.4% APR", f"{wld_miner_data['change_24h']:.2f}% (24h)")
 
         # B. Athene Network Migration Tracker Card
+        mig_prog = kitsune.get_migration_progress()
         st.markdown(f"""
         <div class="glass-panel" style='border-top: 2px solid #58A6FF; margin: 1.5rem 0;'>
             <div style='display: flex; justify-content: space-between; align-items: center;'>
                 <h4 style='margin:0;'>Athene Network Migration Tracker 🌍</h4>
-                <span style='background: rgba(88, 166, 255, 0.1); color: #58A6FF; padding: 2px 8px; border-radius: 10px; font-size: 0.6rem;'>LIVE SYNC</span>
+                <span style='background: rgba(88, 166, 255, 0.1); color: #58A6FF; padding: 2px 8px; border-radius: 10px; font-size: 0.6rem;'>LIVE SYNC {mig_prog:.6f}%</span>
             </div>
             <div style='margin-top: 1rem; background: #30363D; height: 10px; border-radius: 5px; overflow: hidden;'>
-                <div style='background: linear-gradient(90deg, #58A6FF, #7EE787); width: 68%; height: 100%;'></div>
+                <div style='background: linear-gradient(90deg, #58A6FF, #7EE787); width: {mig_prog}%; height: 100%; transition: width 1s linear;'></div>
             </div>
         </div>
         """, unsafe_allow_html=True)

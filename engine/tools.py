@@ -135,3 +135,31 @@ class NeuralPredictTool(Tool):
             return f"[Error] {res['message']}"
         except Exception as e:
             return f"[Error] Neural prediction failed: {str(e)}"
+
+class GenerativeCanvasTool(Tool):
+    @property
+    def name(self):
+        return "design_canvas"
+    
+    @property
+    def description(self):
+        return "Design a custom UI layout. Params: 'layout_json' (A valid JSON string conforming to the GenerativeUI schema: dashboard, table, chart, mermaid)."
+
+    def execute(self, params: Dict[str, Any]) -> str:
+        layout_str = params.get("layout_json")
+        if not layout_str: return "[Error] active_layout parameter required"
+        
+        try:
+            # Validate JSON
+            if isinstance(layout_str, dict):
+                layout_data = layout_str
+            else:
+                layout_data = json.loads(layout_str)
+                
+            # Save to shared state file (Agent -> UI Channel)
+            with open("canvas_state.json", "w", encoding="utf-8") as f:
+                json.dump(layout_data, f, indent=2)
+                
+            return "UI Canvas Updated Successfully. The user can now see the requested layout."
+        except Exception as e:
+            return f"[Error] Invalid Layout JSON: {str(e)}"

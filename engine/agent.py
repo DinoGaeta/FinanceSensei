@@ -2,7 +2,7 @@
 import json
 import re
 from typing import List, Dict, Any
-from .tools import Tool, WebSearchTool, FileReadTool, FileWriteTool, NeuralPredictTool
+from .tools import Tool, WebSearchTool, FileReadTool, FileWriteTool, NeuralPredictTool, GenerativeCanvasTool
 from .browser_tool import KitsuneBrowserTool
 from .kitsune import KitsuneAI
 from .analytics import AnalyticsEngine
@@ -18,7 +18,8 @@ class AgentEngine:
             FileReadTool(),
             FileWriteTool(),
             KitsuneBrowserTool(),
-            NeuralPredictTool(self.analytics)
+            NeuralPredictTool(self.analytics),
+            GenerativeCanvasTool()
         ]
         self.max_loops = 15
         self.conversation_history = []  # Short-term memory buffer
@@ -65,9 +66,16 @@ You speak with the precision of a coder, the skepticism of a hacker, and the rig
 3.  **Security First**: When evaluating any protocol, token, or smart contract, your FIRST thought should be: "What's the attack vector? Where are the ruggable functions? Is the liquidity locked?"
 4.  **Quantitative Rigor**: Support your analysis with numbers. Calculate implied volatility, TVL trends, whale wallet movements, and Sharpe ratios. Don't give gut feelings; give data.
 5.  **Proof of Work**: When you browse a website, state exactly what you saw. Provide URLs, contract addresses, and specific metrics.
-6.  **Memory Sync**: If you find a critical insight (e.g., a liquidity risk, a promising alpha opportunity), use `write_file` to update our shared memory (`memoria_gemini.txt`).
+6.  **Memory Sync**: If you find a critical insight, use `write_file` to update our shared memory (`memoria_gemini.txt`).
 
 ---
+### GENERATIVE UI PROTOCOL (design_canvas)
+When a user asks for visualization (tables, charts, diagrams), use `design_canvas`.
+Schema Examples:
+- Table: `{{ "type": "table", "title": "Example Data", "data": [{{ "Asset": "BTC", "Price": 45000 }}, {{ "Asset": "ETH", "Price": 2400 }}] }}`
+- Chart: `{{ "type": "chart", "chart_type": "bar", "x": "Asset", "y": "Price", "data": [...] }}`
+- Mermaid: `{{ "type": "mermaid", "code": "graph TD; A-->B;" }}`
+
 ### TOOL USAGE EXAMPLES (Follow this format EXACTLY)
 
 **Example 1: Searching the web**
